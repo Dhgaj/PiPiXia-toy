@@ -1,0 +1,85 @@
+# 测试直接 import（不使用 as 别名）
+# 目标：验证直接导入模块，函数直接可用
+
+# 直接导入模块（不使用别名）
+import math_module
+
+func main(): int {
+    print("=== 测试直接 Import（无别名）===")
+    print("")
+    
+    # 测试1：直接调用模块函数（使用模块名）
+    print("测试1: 使用模块名调用")
+    let x: int = 7
+    let squared: int = math_module.square(x)
+    print("  math_module.square(7) = ${squared} (应输出: 49)")
+    
+    let cubed: int = math_module.cube(x)
+    print("  math_module.cube(7) = ${cubed} (应输出: 343)")
+    print("")
+    
+    # 测试2：绝对值和最值函数
+    print("测试2: 绝对值和最值")
+    let a: int = -15
+    let b: int = 8
+    let abs_val: int = math_module.abs(a)
+    let max_val: int = math_module.max(abs_val, b)
+    print("  math_module.abs(-15) = ${abs_val} (应输出: 15)")
+    print("  math_module.max(15, 8) = ${max_val} (应输出: 15)")
+    print("")
+    
+    # 测试3：阶乘和幂运算
+    print("测试3: 阶乘和幂运算")
+    let n: int = 6
+    let fact: int = math_module.factorial(n)
+    print("  math_module.factorial(6) = ${fact} (应输出: 720)")
+    
+    let base: int = 3
+    let exp: int = 4
+    let pow_result: int = math_module.power(base, exp)
+    print("  math_module.power(3, 4) = ${pow_result} (应输出: 81)")
+    print("")
+    
+    # 测试4：奇偶判断
+    print("测试4: 奇偶判断")
+    let num1: int = 20
+    let num2: int = 13
+    if math_module.is_even(num1) {
+        print("  20 是偶数 (应输出: true)")
+    }
+    if math_module.is_odd(num2) {
+        print("  13 是奇数 (应输出: true)")
+    }
+    print("")
+    
+    # 测试5：浮点数运算
+    print("测试5: 浮点数运算")
+    let d1: double = 10.5
+    let d2: double = 4.5
+    let sum: double = math_module.add_double(d1, d2)
+    print("  math_module.add_double(10.5, 4.5) = ${sum} (应输出: 15.0)")
+    print("")
+    
+    # 测试6：圆的计算
+    print("测试6: 圆的计算")
+    let radius: double = 3.0
+    let area: double = math_module.circle_area(radius)
+    let circum: double = math_module.circle_circumference(radius)
+    print("半径为 3.0 的圆:")
+    print("  面积 = ${area} (应输出: 28.27)")
+    print("  周长 = ${circum} (应输出: 18.85)")
+    print("")
+    
+    # 测试7：嵌套调用
+    print("测试7: 嵌套调用")
+    let result1: int = math_module.square(math_module.abs(-5))
+    print("  math_module.square(math_module.abs(-5)) = ${result1} (应输出: 25)")
+    
+    let result2: int = math_module.max(math_module.square(3), math_module.cube(2))
+    print("  math_module.max(square(3), cube(2)) = ${result2} (应输出: 9)")
+    print("")
+    
+    print("=== 直接导入测试完成 ===")
+
+    return 0
+}

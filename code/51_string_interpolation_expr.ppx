@@ -1,0 +1,9 @@
+# 字符串插值表达式测试
+
+func main(): int {
+    let x: int = 10
+    let y: int = 20
+    let result: string = "${x} + ${y} = ${x + y}"
+    print(result)
+    return 0
+}

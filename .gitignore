@@ -1,0 +1,127 @@
+# PiPiXia 编译器项目 .gitignore 配置文件
+
+# 系统文件
+# macOS 
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+
+# Windows 
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# 编辑器文件
+# VS Code 
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+tempCodeRunnerFile*
+
+# IntelliJ IDEA 
+.idea/
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+\#*\#
+.\#*
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# 编译器生成的文件 
+# Flex/Bison 生成的源文件
+lexical.cc
+syntax.cc
+syntax.hh
+syntax.output
+location.hh
+position.hh
+stack.hh
+
+# 编译产物
+*.o
+*.ll
+*.ast
+*.tokens
+compiler
+
+# 防止 code 目录下生成的产物上传
+code/*
+code/*.ll
+code/*.ast
+code/*.tokens
+!code/*.ppx
+!code/README.md
+
+# 忽略 output 目录下的产物, 但保留目录结构
+output/ast/*
+!output/ast/.gitkeep
+output/ast_visualized/*
+!output/ast_visualized/.gitkeep
+output/exec/*
+!output/exec/.gitkeep
+output/llvm/*
+!output/llvm/.gitkeep
+output/token/*
+!output/token/.gitkeep
+
+# 忽略输出和报告文件，但保留目录结构
+!report/.gitkeep
+report/**.md
+
+# 测试文件 - 只忽略编译产物，保留源代码
+test/*
+test/*.o
+test/*.ll
+test/*.ast
+test/*.tokens
+!test/*.ppx
+
+# Other
+# CI/CD 环境配置和敏感信息
+.env
+.env.*
+!.env.example
+.platform_config
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# 日志文件
+log/
+*.log
+
+# 临时文件和备份文件
+*.tmp
+*.bak
+*.swp
+
+# 压缩文件
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Python 生成的文件
+__pycache__/
+.venv/
+*.pyc
+*.pyo
+*.pyd
+
+# 检查目录
+check/
+
+# 临时文档
+markdown/
+
+# 项目回收站
+.Trash/

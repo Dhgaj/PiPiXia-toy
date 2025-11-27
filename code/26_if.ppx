@@ -1,0 +1,9 @@
+# if 语句测试
+
+func main(): int {
+    let age: int = 20
+    if (age >= 18) {
+        print("成年人")
+    }
+    return 0
+}

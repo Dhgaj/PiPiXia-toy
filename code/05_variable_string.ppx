@@ -1,0 +1,7 @@
+# 字符串变量测试
+
+func main(): int {
+    let name: string = "Alice"
+    print(name)
+    return 0
+}

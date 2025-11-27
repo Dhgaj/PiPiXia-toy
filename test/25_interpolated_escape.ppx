@@ -1,0 +1,40 @@
+# 测试插值字符串中的转义字符
+
+func main(): int {
+    print("===== 插值字符串转义字符测试 =====")
+    print("")
+    
+    let name: string = "PiPiXia"
+    let version: int = 1
+    
+    print("测试1: 换行符 \\n")
+    print("普通字符串: Hello\nWorld")
+    print("插值字符串: Hello\n${name}")
+    print("")
+    
+    print("测试2: 制表符 \\t")
+    print("普通字符串: Name:\tPiPiXia")
+    print("插值字符串: Name:\t${name}")
+    print("")
+    
+    print("测试3: 混合转义符")
+    print("插值字符串: Line1\n\tVersion: ${version}\n\tName: ${name}")
+    print("")
+    
+    print("测试4: 回车符 \\r 和反斜杠 \\\\")
+    print("插值字符串: Path: C:\\Users\\${name}\\Documents")
+    print("")
+    
+    print("测试5: 引号转义")
+    print("插值字符串: He said: \"${name} is awesome!\"")
+    print("")
+    
+    print("测试6: 复杂组合")
+    let count: int = 42
+    print("插值字符串: \tCount:\t${count}\n\tName:\t${name}\n\tStatus:\tOK")
+    print("")
+    
+    print("===== 测试完成 =====")
+    return 0
+    
+}

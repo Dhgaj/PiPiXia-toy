@@ -1,0 +1,7 @@
+# 整数变量测试
+
+func main(): int {
+    let age: int = 25
+    print(age)
+    return 0
+}

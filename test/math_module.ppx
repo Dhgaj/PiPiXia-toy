@@ -1,0 +1,85 @@
+# 数学模块 - 提供基本数学函数
+# 用于测试 import as 功能
+
+# 全局常量
+let PI: double = 3.14159265359
+let E: double = 2.71828182846
+
+# 计算平方
+func square(x: int): int {
+    return x * x
+}
+
+# 计算立方
+func cube(x: int): int {
+    return x * x * x
+}
+
+# 计算绝对值
+func abs(x: int): int {
+    if x < 0 {
+        return -x
+    }
+    return x
+}
+
+# 计算最大值
+func max(a: int, b: int): int {
+    if a > b {
+        return a
+    }
+    return b
+}
+
+# 计算最小值
+func min(a: int, b: int): int {
+    if a < b {
+        return a
+    }
+    return b
+}
+
+# 计算阶乘（递归）
+func factorial(n: int): int {
+    if n <= 1 {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
+
+# 计算幂（整数幂）
+func power(base: int, exp: int): int {
+    if exp == 0 {
+        return 1
+    }
+    let result: int = 1
+    for i in 0..exp {
+        result = result * base
+    }
+    return result
+}
+
+# 判断是否为偶数
+func is_even(n: int): bool {
+    return n % 2 == 0
+}
+
+# 判断是否为奇数
+func is_odd(n: int): bool {
+    return n % 2 != 0
+}
+
+# 浮点数加法
+func add_double(a: double, b: double): double {
+    return a + b
+}
+
+# 计算圆的面积
+func circle_area(radius: double): double {
+    return PI * radius * radius
+}
+
+# 计算圆的周长
+func circle_circumference(radius: double): double {
+    return 2.0 * PI * radius
+}

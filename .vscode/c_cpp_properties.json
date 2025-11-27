@@ -1,0 +1,35 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/opt/homebrew/opt/llvm/include",
+                "/opt/homebrew/Cellar/llvm/21.1.5/include",
+                "/usr/local/include",
+                "~/Projects/local/toy/**"
+            ],
+            "defines": [
+                "__STDC_CONSTANT_MACROS",
+                "__STDC_FORMAT_MACROS", 
+                "__STDC_LIMIT_MACROS",
+                "EXPERIMENTAL_KEY_INSTRUCTIONS"
+            ],
+            "macFrameworkPath": [
+                "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks",
+                "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks"
+            ],
+            "compilerPath": "/usr/bin/clang++",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "macos-clang-arm64",
+            "compilerArgs": [
+                "-std=c++17",
+                "-stdlib=libc++",
+                "-fno-exceptions",
+                "-funwind-tables"
+            ]
+        }
+    ],
+    "version": 4
+}

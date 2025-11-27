@@ -1,0 +1,106 @@
+# 控制流测试
+# 测试 if/else 条件语句
+
+func main(): int {
+    print("===== 控制流测试 =====")
+    print("")
+    
+    # 基本 if 语句
+    print("1. 基本 if 语句:")
+    let x: int = 10
+    print("  x = ${x}, 测试 x > 5")
+    if (x > 5) {
+        print("  结果: x > 5 为真 ✓")
+    }
+    print("")
+    
+    # if-else 语句
+    print("2. if-else 语句:")
+    let y: int = 3
+    print("  y = ${y}, 测试 y > 5")
+    if (y > 5) {
+        print("  结果: y > 5")
+    } else {
+        print("  结果: y <= 5 ✓")
+    }
+    print("")
+    
+    # if-else if-else 链
+    print("3. if-else if-else 链:")
+    let score: int = 75
+    print("  score = ${score}")
+    if (score >= 90) {
+        print("  结果: 成绩 A (>=90)")
+    } else {
+        if (score >= 80) {
+            print("  结果: 成绩 B (80-89)")
+        } else {
+            if (score >= 70) {
+                print("  结果: 成绩 C (70-79) ✓")
+            } else {
+                print("  结果: 成绩 D (<70)")
+            }
+        }
+    }
+    print("")
+    
+    # 嵌套 if 语句
+    print("4. 嵌套 if 语句:")
+    let a: int = 15
+    let b: int = 20
+    print("  a = ${a}, b = ${b}")
+    if (a > 10) {
+        print("  外层: a > 10 ✓")
+        if (b > 15) {
+            print("  内层: b > 15 ✓")
+        }
+    }
+    print("")
+    
+    # 比较运算符测试
+    print("5. 比较运算符:")
+    let n1: int = 10
+    let n2: int = 20
+    
+    if (n1 < n2) {
+        print("  n1 < n2: 真")
+    }
+    
+    if (n1 <= 10) {
+        print("  n1 <= 10: 真")
+    }
+    
+    if (n2 > n1) {
+        print("  n2 > n1: 真")
+    }
+    
+    if (n2 >= 20) {
+        print("  n2 >= 20: 真")
+    }
+    
+    if (n1 == 10) {
+        print("  n1 == 10: 真")
+    }
+    
+    if (n1 != n2) {
+        print("  n1 != n2: 真")
+    }
+    print("")
+    
+    # 浮点数比较
+    print("6. 浮点数比较:")
+    let f1: double = 3.14
+    let f2: double = 2.71
+    
+    if (f1 > f2) {
+        print("  3.14 > 2.71: 真")
+    }
+    
+    if (f2 < 3.0) {
+        print("  2.71 < 3.0: 真")
+    }
+    print("")
+    
+    print("控制流测试完成！")
+    return 0
+}

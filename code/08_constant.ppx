@@ -1,0 +1,7 @@
+# 常量测试
+
+func main(): int {
+    const PI: double = 3.14159
+    print(PI)
+    return 0
+}

@@ -1,0 +1,31 @@
+# 字符串内存管理边界测试
+
+func main(): int {
+    print("===== 字符串内存边界测试 =====")
+    print("")
+    
+    # 测试1: 字符串变量间赋值
+    print("测试1: 字符串变量间赋值")
+    let original: string = "Hello" + " " + "World"
+    print("  original = ${original} (应输出: Hello World)")
+    let copy1: string = original
+    print("  copy1 = ${copy1} (应输出: Hello World)")
+    let copy2: string = original
+    print("  copy2 = ${copy2} (应输出: Hello World)")
+    print("  original again = ${original} (应输出: Hello World)")
+    print("")
+    
+    # 测试2: 中间结果重用
+    print("测试2: 使用中间拼接结果")
+    let a: string = "A"
+    let b: string = "B"
+    let ab: string = a + b
+    print("  ab = ${ab} (应输出: AB)")
+    let abc: string = ab + "C"
+    print("  abc = ${abc} (应输出: ABC)")
+    print("  ab again = ${ab} (应输出: AB)")
+    print("")
+    
+    print("===== 测试完成 =====")
+    return 0
+}

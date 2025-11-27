@@ -1,0 +1,95 @@
+# 测试异常处理中的临时内存管理
+
+func testBasicThrow() {
+    print("测试1: 基本 throw 语句")
+    try {
+        let errorCode: int = 500
+        print("  抛出异常，代码: ", nowrap)
+        print(errorCode)
+        throw "错误消息"
+    } catch (e: string) {
+        print("  捕获异常: ${e}")
+    }
+    print("  测试1完成")
+    print("")
+}
+
+func testThrowWithStringInterpolation() {
+    print("测试2: throw 带字符串插值")
+    try {
+        let code: int = 404
+        let module: string = "网络"
+        # 字符串插值会创建临时内存
+        throw "错误代码 ${code} 在模块中"
+    } catch (err: string) {
+        print("  捕获异常: ${err}")
+    }
+    print("  测试2完成")
+    print("")
+}
+
+func testNestedTryCatch() {
+    print("测试3: 嵌套 try-catch")
+    try {
+        print("  外层 try 块")
+        try {
+            print("  内层 try 块")
+            throw "内层异常"
+        } catch (inner: string) {
+            print("  内层 catch: ${inner}")
+        }
+        print("  外层继续执行")
+    } catch (outer: string) {
+        print("  外层 catch: ${outer}")
+    }
+    print("  测试3完成")
+    print("")
+}
+
+func testMultipleThrows() {
+    print("测试4: 循环中多次抛出异常")
+    for i in 0..3 {
+        try {
+            print("  迭代 ", nowrap)
+            print(i, nowrap)
+            print(": 抛出异常")
+            throw "循环中的异常"
+        } catch (e: string) {
+            print("    捕获: ${e}")
+        }
+    }
+    print("  测试4完成")
+    print("")
+}
+
+func testThrowInFunction(): int {
+    print("测试5: 函数中抛出异常")
+    try {
+        let value: int = 100
+        if (value > 50) {
+            throw "值太大"
+        }
+        return value
+    } catch (e: string) {
+        print("  捕获: ${e}")
+        return 0
+    }
+}
+
+func main(): int {
+    print("===== 异常处理内存管理测试 =====")
+    print("")
+    
+    testBasicThrow()
+    testThrowWithStringInterpolation()
+    testNestedTryCatch()
+    testMultipleThrows()
+    
+    let result: int = testThrowInFunction()
+    print("  函数返回值: ", nowrap)
+    print(result)
+    print("")
+    
+    print("===== 测试完成 =====")
+    return 0
+}

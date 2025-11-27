@@ -1,0 +1,11 @@
+# 带返回值函数测试
+
+func add(a: int, b: int): int {
+    return a + b
+}
+
+func main(): int {
+    let sum: int = add(10, 20)
+    print(sum)
+    return 0
+}

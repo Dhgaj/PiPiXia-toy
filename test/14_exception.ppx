@@ -1,0 +1,56 @@
+# 异常处理测试
+# 测试 try-catch-throw 异常机制
+
+func divide(a: int, b: int): int {
+    if (b == 0) {
+        throw "Division by zero error"
+    }
+    return a / b
+}
+
+func main(): int {
+    print("===== 异常处理测试 =====")
+    print("")
+    
+    # 基本 try-catch
+    print("1. 基本异常捕获:")
+    try {
+        print("  尝试执行可能出错的代码...")
+        throw "测试异常"
+    } catch (e: string) {
+        print("  捕获到异常: ${e}")
+    }
+    print("")
+    
+    # 条件抛出异常
+    print("2. 条件异常抛出:")
+    let x: int = 0
+    try {
+        if (x == 0) {
+            throw "x 不能为零"
+        }
+        print("  这行不应该执行")
+    } catch (err: string) {
+        print("  捕获到错误: ${err}")
+    }
+    print("")
+    
+    # 嵌套 try-catch
+    print("3. 嵌套异常处理:")
+    try {
+        print("  外层 try 块")
+        try {
+            print("  内层 try 块")
+            throw "内层异常"
+        } catch (inner_e: string) {
+            print("  内层捕获: ${inner_e}")
+        }
+        print("  外层继续执行")
+    } catch (outer_e: string) {
+        print("  外层捕获: ${outer_e}")
+    }
+    print("")
+    
+    print("异常处理测试完成！")
+    return 0
+}

@@ -1,0 +1,10 @@
+# 数组访问测试
+
+func main(): int {
+    let arr: int[5] = [1, 2, 3, 4, 5]
+    let first: int = arr[0]
+    let last: int = arr[4]
+    print(first)
+    print(last)
+    return 0
+}

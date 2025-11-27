@@ -1,0 +1,7 @@
+# 空数组测试
+
+func main(): int {
+    let empty: int[0] = []
+    print("Empty array created")
+    return 0
+}

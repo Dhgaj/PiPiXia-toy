@@ -1,0 +1,62 @@
+# 取模运算测试
+# 测试 % 取模运算符
+
+func main(): int {
+    print("===== 取模运算测试 =====")
+    print("")
+    
+    # 基本取模
+    print("1. 基本取模运算:")
+    let m1: int = 10 % 3
+    let m2: int = 20 % 7
+    let m3: int = 15 % 5
+    print("  10 % 3 = ${m1} (应输出: 1)")
+    print("  20 % 7 = ${m2} (应输出: 6)")
+    print("  15 % 5 = ${m3} (应输出: 0)")
+    print("")
+    
+    # 判断奇偶数
+    print("2. 判断奇偶数:")
+    let nums: int[5] = [2, 7, 10, 15, 21]
+    let idx: int = 0
+    while (idx < 5) {
+        let n: int = nums[idx]
+        let remainder: int = n % 2
+        if (remainder == 0) {
+            print("  ${n} 是偶数")
+        } else {
+            print("  ${n} 是奇数")
+        }
+        idx = idx + 1
+    }
+    print("")
+    
+    # 循环索引
+    print("3. 使用取模实现循环索引:")
+    let arr: int[5] = [10, 20, 30, 40, 50]
+    let i: int = 0
+    while (i < 8) {
+        let pos: int = i % 5
+        print("  arr[${pos}] = ${arr[pos]}")
+        i = i + 1
+    }
+    print("")
+    
+    # 整除判断
+    print("4. 整除判断:")
+    let x: int = 12
+    let y: int = 3
+    let z: int = 5
+    
+    if ((x % y) == 0) {
+        print("  ${x} 能被 ${y} 整除")
+    }
+    
+    if ((x % z) != 0) {
+        print("  ${x} 不能被 ${z} 整除")
+    }
+    print("")
+    
+    print("取模运算测试完成！")
+    return 0
+}

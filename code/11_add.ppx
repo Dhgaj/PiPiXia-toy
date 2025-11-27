@@ -1,0 +1,9 @@
+# 加法运算测试
+
+func main(): int {
+    let a: int = 10
+    let b: int = 20
+    let sum: int = a + b
+    print(sum)
+    return 0
+}

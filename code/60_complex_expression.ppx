@@ -1,0 +1,10 @@
+# 复杂表达式测试
+
+func main(): int {
+    let a: int = 5
+    let b: int = 10
+    let c: int = 15
+    let result: int = (a + b) * c - a
+    print(result)
+    return 0
+}

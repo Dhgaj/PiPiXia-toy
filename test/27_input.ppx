@@ -1,0 +1,29 @@
+# 测试 input() 函数
+
+func main(): int {
+    print("===== input() 函数测试 =====")
+    print("")
+    
+    print("测试1: 无参数 input()")
+    print("请输入你的名字: ", nowrap)
+    let name: string = input()
+    print("你好, ", nowrap)
+    print(name)
+    print("")
+    
+    print("测试2: 带提示的 input()")
+    let age: string = input("请输入你的年龄: ")
+    print("你的年龄是: ", nowrap)
+    print(age)
+    print("")
+    
+    print("测试3: 多次输入")
+    let city: string = input("你来自哪个城市? ")
+    print("欢迎来自 ", nowrap)
+    print(city, nowrap)
+    print(" 的朋友!")
+    print("")
+    
+    print("===== 测试完成 =====")
+    return 0
+}

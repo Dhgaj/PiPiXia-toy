@@ -1,0 +1,11 @@
+# if-else 语句测试
+
+func main(): int {
+    let score: int = 75
+    if (score >= 60) {
+        print("及格")
+    } else {
+        print("不及格")
+    }
+    return 0
+}

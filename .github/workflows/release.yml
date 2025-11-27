@@ -1,0 +1,99 @@
+name: Release PiPiXia Compiler
+
+on:
+  push:
+    tags:
+      - 'v*'  # 当推送 v 开头的 tag 时触发，例如 v1.0.0
+  workflow_dispatch:  # 也支持手动触发
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    
+    steps:
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: PiPiXia Compiler ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+  build-and-upload:
+    name: Build and Upload
+    needs: create-release
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: compiler
+            asset_name: compiler-linux-amd64
+          - os: macos-latest
+            artifact_name: compiler
+            asset_name: compiler-macos-arm64
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v4
+
+    - name: Install Dependencies (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+        sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+        sudo apt-get update
+        sudo apt-get install -y flex bison llvm-21-dev liblld-21-dev clang-21 make g++
+        sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-21 100
+
+    - name: Install Dependencies (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        brew update
+        brew install llvm flex bison make
+
+    - name: Configure PATH (macOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        echo "/opt/homebrew/opt/flex/bin" >> $GITHUB_PATH
+        echo "/opt/homebrew/opt/bison/bin" >> $GITHUB_PATH
+        echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
+
+    - name: Detect Platform & Generate Config
+      run: |
+        chmod +x scripts/01_detect_platform.sh
+        ./scripts/01_detect_platform.sh
+
+    - name: Build Compiler
+      run: make
+
+    - name: Run Tests
+      run: |
+        chmod +x scripts/07_build_code.sh
+        ./scripts/07_build_code.sh
+
+    - name: Package Compiler
+      run: |
+        mkdir -p release
+        cp compiler release/${{ matrix.asset_name }}
+        chmod +x release/${{ matrix.asset_name }}
+        cd release
+        tar -czf ${{ matrix.asset_name }}.tar.gz ${{ matrix.asset_name }}
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./release/${{ matrix.asset_name }}.tar.gz
+        asset_name: ${{ matrix.asset_name }}.tar.gz
+        asset_content_type: application/gzip

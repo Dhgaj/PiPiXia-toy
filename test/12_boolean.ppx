@@ -1,0 +1,85 @@
+# 布尔运算测试
+# 测试布尔类型、逻辑运算符
+
+func main(): int {
+    print("===== 布尔运算测试 =====")
+    print("")
+    
+    # 布尔字面量
+    print("1. 布尔字面量:")
+    let t: bool = true
+    let f: bool = false
+    print("  t = ${t} (应输出: true)")
+    print("  f = ${f} (应输出: false)")
+    print("")
+    
+    # 比较运算产生布尔值
+    print("2. 比较运算:")
+    let x: int = 10
+    let y: int = 20
+    let is_less: bool = x < y
+    let is_equal: bool = x == y
+    print("  x < y = ${is_less} (应输出: true)")
+    print("  x == y = ${is_equal} (应输出: false)")
+    print("")
+    
+    # 逻辑与运算
+    print("3. 逻辑与运算 (&&):")
+    let and1: bool = true && true
+    let and2: bool = true && false
+    let and3: bool = false && false
+    print("  true && true = ${and1} (应输出: true)")
+    print("  true && false = ${and2} (应输出: false)")
+    print("  false && false = ${and3} (应输出: false)")
+    print("")
+    
+    # 逻辑或运算
+    print("4. 逻辑或运算 (||):")
+    let or1: bool = true || true
+    let or2: bool = true || false
+    let or3: bool = false || false
+    print("  true || true = ${or1} (应输出: true)")
+    print("  true || false = ${or2} (应输出: true)")
+    print("  false || false = ${or3} (应输出: false)")
+    print("")
+    
+    # 逻辑非运算
+    print("5. 逻辑非运算 (!):")
+    let not1: bool = !true
+    let not2: bool = !false
+    print("  !true = ${not1} (应输出: false)")
+    print("  !false = ${not2} (应输出: true)")
+    print("")
+    
+    # 复合逻辑表达式
+    print("6. 复合逻辑表达式:")
+    let a: int = 5
+    let b: int = 10
+    let c: int = 15
+    
+    let result1: bool = (a < b) && (b < c)
+    print("  (a < b) && (b < c) = ${result1} (应输出: true)")
+    
+    let result2: bool = (a > b) || (b < c)
+    print("  (a > b) || (b < c) = ${result2} (应输出: true)")
+    
+    let result3: bool = !(a == b)
+    print("  !(a == b) = ${result3} (应输出: true)")
+    print("")
+    
+    # 布尔值在条件语句中使用
+    print("7. 布尔值在条件语句中:")
+    let ready: bool = true
+    if (ready) {
+        print("  系统已就绪")
+    }
+    
+    let error: bool = false
+    if (!error) {
+        print("  没有错误")
+    }
+    print("")
+    
+    print("布尔运算测试完成！")
+    return 0
+}

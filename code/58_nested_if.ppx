@@ -1,0 +1,12 @@
+# 嵌套 if 测试
+
+func main(): int {
+    let x: int = 15
+    let y: int = 20
+    if (x > 10) {
+        if (y > 15) {
+            print("Both conditions true")
+        }
+    }
+    return 0
+}

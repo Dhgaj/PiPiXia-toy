@@ -1,0 +1,10 @@
+# 嵌套循环测试
+
+func main(): int {
+    for i in 0..3 {
+        for j in 0..3 {
+            print(i * 3 + j)
+        }
+    }
+    return 0
+}

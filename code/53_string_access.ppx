@@ -1,0 +1,8 @@
+# 字符串索引访问测试
+
+func main(): int {
+    let str: string = "Hello"
+    let firstChar: char = str[0]
+    print(firstChar)
+    return 0
+}

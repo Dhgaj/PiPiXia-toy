@@ -1,0 +1,29 @@
+# 测试字符串重新赋值时的内存泄漏
+
+func main(): int {
+    print("===== 字符串重新赋值内存泄漏测试 =====")
+    print("")
+    
+    # 测试: 多次重新赋值拼接的字符串
+    print("多次重新赋值动态分配的字符串:")
+    let str: string = "A" + "B"  # 第一次：malloc 分配 "AB"
+    print("  第1次: ${str} (应输出: AB)")
+    
+    str = "C" + "D"  # 第二次：malloc 分配 "CD"，但 "AB" 没有被 free！
+    print("  第2次: ${str} (应输出: CD)")
+    
+    str = "E" + "F"  # 第三次：malloc 分配 "EF"，但 "CD" 没有被 free！
+    print("  第3次: ${str} (应输出: EF)")
+    
+    str = "G" + "H"  # 第四次：malloc 分配 "GH"，但 "EF" 没有被 free！
+    print("  第4次: ${str} (应输出: GH)")
+    
+    str = "I" + "J"  # 第五次：malloc 分配 "IJ"，但 "GH" 没有被 free！
+    print("  第5次: ${str} (应输出: IJ)")
+    
+    print("")
+    print("问题: 前4次分配的内存都泄漏了！")
+    print("===== 测试完成 =====")
+    
+    return 0
+}

@@ -1,0 +1,9 @@
+# 乘法运算测试
+
+func main(): int {
+    let a: int = 5
+    let b: int = 6
+    let product: int = a * b
+    print(product)
+    return 0
+}

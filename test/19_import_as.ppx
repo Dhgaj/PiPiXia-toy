@@ -1,0 +1,92 @@
+# 测试 import as 别名功能
+# 目标：验证模块别名和命名空间隔离
+
+# 测试1：导入模块并使用别名
+import math_module as math
+
+func main(): int {
+    print("=== 测试 Import As 别名功能 ===")
+    print("")
+    
+    # 测试1：调用数学模块的函数
+    print("测试1: 基本函数调用")
+    let x: int = 5
+    let squared: int = math.square(x)
+    print("  math.square(5) = ${squared} (应输出: 25)")
+    
+    let cubed: int = math.cube(x)
+    print("  math.cube(5) = ${cubed} (应输出: 125)")
+    print("")
+    
+    # 测试2：测试绝对值函数
+    print("测试2: 绝对值函数")
+    let neg: int = -10
+    let abs_val: int = math.abs(neg)
+    print("  math.abs(-10) = ${abs_val} (应输出: 10)")
+    print("")
+    
+    # 测试3：测试最大最小值
+    print("测试3: 最大最小值")
+    let a: int = 42
+    let b: int = 17
+    let max_val: int = math.max(a, b)
+    let min_val: int = math.min(a, b)
+    print("  math.max(42, 17) = ${max_val} (应输出: 42)")
+    print("  math.min(42, 17) = ${min_val} (应输出: 17)")
+    print("")
+    
+    # 测试4：测试阶乘
+    print("测试4: 阶乘计算")
+    let n: int = 5
+    let fact: int = math.factorial(n)
+    print("  math.factorial(5) = ${fact} (应输出: 120)")
+    print("")
+    
+    # 测试5：测试幂运算
+    print("测试5: 幂运算")
+    let base: int = 2
+    let exp: int = 8
+    let pow_result: int = math.power(base, exp)
+    print("  math.power(2, 8) = ${pow_result} (应输出: 256)")
+    print("")
+    
+    # 测试6：测试奇偶判断
+    print("测试6: 奇偶判断")
+    let num1: int = 10
+    let num2: int = 7
+    if math.is_even(num1) {
+        print("  10 是偶数 (应输出: true)")
+    }
+    if math.is_odd(num2) {
+        print("  7 是奇数 (应输出: true)")
+    }
+    print("")
+    
+    # 测试7：测试浮点数运算
+    print("测试7: 浮点数运算")
+    let d1: double = 3.5
+    let d2: double = 2.5
+    let sum: double = math.add_double(d1, d2)
+    print("  math.add_double(3.5, 2.5) = ${sum} (应输出: 6.0)")
+    print("")
+    
+    # 测试8：测试圆的计算
+    print("测试8: 圆的计算")
+    let radius: double = 5.0
+    let area: double = math.circle_area(radius)
+    let circum: double = math.circle_circumference(radius)
+    print("半径为 5.0 的圆:")
+    print("  面积 = ${area} (应输出: 78.54)")
+    print("  周长 = ${circum} (应输出: 31.42)")
+    print("")
+    
+    # 测试9：连续调用
+    print("测试9: 连续调用")
+    let result: int = math.square(math.abs(-3))
+    print("  math.square(math.abs(-3)) = ${result} (应输出: 9)")
+    print("")
+    
+    print("=== 所有测试完成 ===")
+
+    return 0
+}

@@ -1,0 +1,162 @@
+# 测试新增的控制流语句：break, continue, switch/case
+
+func main(): int {
+    print("===== 控制流语句测试 =====")
+    print("")
+    
+    # 测试1: break 语句
+    print("测试1: while 循环中的 break")
+    let count1: int = 0
+    while (count1 < 10) {
+        if (count1 == 5) {
+            print("  遇到 5，break 退出循环")
+            break
+        }
+        print("  count = ", nowrap)
+        print(count1)
+        count1 = count1 + 1
+    }
+    print("  最终 count = ", nowrap)
+    print(count1)
+    print("  (应输出: 5)")
+    print("")
+    
+    # 测试2: continue 语句
+    print("测试2: while 循环中的 continue")
+    let count2: int = 0
+    while (count2 < 5) {
+        count2 = count2 + 1
+        if (count2 == 3) {
+            print("  跳过 3")
+            continue
+        }
+        print("  count = ", nowrap)
+        print(count2)
+    }
+    print("  (应输出: 1, 2, 跳过3, 4, 5)")
+    print("")
+    
+    # 测试3: for 循环中的 break
+    print("测试3: for 循环中的 break")
+    for i in 0..10 {
+        if (i == 7) {
+            print("  遇到 7，break 退出")
+            break
+        }
+        print("  i = ", nowrap)
+        print(i)
+    }
+    print("  (应输出: 0-6)")
+    print("")
+    
+    # 测试4: for 循环中的 continue
+    print("测试4: for 循环中的 continue (只打印偶数)")
+    for i in 0..10 {
+        if (i % 2 == 1) {
+            continue
+        }
+        print("  偶数: ", nowrap)
+        print(i)
+    }
+    print("  (应输出: 0, 2, 4, 6, 8)")
+    print("")
+    
+    # 测试5: switch 语句基本用法
+    print("测试5: switch 语句")
+    let day: int = 3
+    switch day {
+        case 1: {
+            print("  星期一")
+        }
+        case 2: {
+            print("  星期二")
+        }
+        case 3: {
+            print("  星期三")
+        }
+        case 4: {
+            print("  星期四")
+        }
+        case 5: {
+            print("  星期五")
+        }
+        default: {
+            print("  周末")
+        }
+    }
+    print("  (应输出: 星期三)")
+    print("")
+    
+    # 测试6: switch with break
+    print("测试6: switch 中的 break")
+    let num: int = 2
+    switch num {
+        case 1: {
+            print("  情况 1")
+            break
+        }
+        case 2: {
+            print("  情况 2")
+            break
+        }
+        case 3: {
+            print("  情况 3")
+            break
+        }
+        default: {
+            print("  默认情况")
+        }
+    }
+    print("  (应输出: 情况 2)")
+    print("")
+    
+    # 测试7: 嵌套循环中的 break
+    print("测试7: 嵌套循环中的 break")
+    for i in 0..3 {
+        print("  外层: ", nowrap)
+        print(i)
+        for j in 0..3 {
+            if (j == 2) {
+                print("    内层 break")
+                break
+            }
+            print("    内层: ", nowrap)
+            print(j)
+        }
+    }
+    print("  (内层应在 j=2 时 break)")
+    print("")
+    
+    # 测试8: 数字分类 (综合示例)
+    print("测试8: 综合示例 - 数字分类")
+    for num in 1..11 {
+        # 跳过 5
+        if (num == 5) {
+            continue
+        }
+        
+        # 10 以上停止
+        if (num >= 10) {
+            break
+        }
+        
+        # 根据奇偶性分类
+        switch (num % 2) {
+            case 0: {
+                print("  ", nowrap)
+                print(num)
+                print(" 是偶数")
+            }
+            case 1: {
+                print("  ", nowrap)
+                print(num)
+                print(" 是奇数")
+            }
+        }
+    }
+    print("  (应输出: 1-4, 6-9 的奇偶分类，跳过5，10停止)")
+    print("")
+    
+    print("===== 测试完成 =====")
+    return 0
+}

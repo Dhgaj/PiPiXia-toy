@@ -1,0 +1,84 @@
+# 除法运算测试
+# 测试整数、浮点数的除法运算
+
+func main(): int {
+    print("========== 除法运算测试 ==========")
+    print("")
+    
+    # 整数除法 (浮点结果)
+    print("1. 整数除法 (浮点结果 /):")
+    let r1: double = 20 / 10
+    let r2: double = 10 / 20
+    let r3: double = -20 / 10
+    let r4: double = 7 / 2
+    print("  20 / 10 = ${r1} (应输出: 2.0)")
+    print("  10 / 20 = ${r2} (应输出: 0.5)")
+    print("  -20 / 10 = ${r3} (应输出: -2.0)")
+    print("  7 / 2 = ${r4} (应输出: 3.5)")
+    print("")
+    
+    # 整数整除
+    print("2. 整数整除 (//):")
+    let i1: int = 20 // 10
+    let i2: int = 7 // 2
+    let i3: int = 20 // 6
+    print("  20 // 10 = ${i1} (应输出: 2)")
+    print("  7 // 2 = ${i2} (应输出: 3)")
+    print("  20 // 6 = ${i3} (应输出: 3)")
+    print("")
+    
+    # 变量运算
+    let x: int = 100
+    let y: int = 20
+    let z: int = 8
+    
+    print("3. 变量运算:")
+    print("  x = ${x}, y = ${y}, z = ${z}")
+    let xy: double = x / y
+    let xz: double = x / z
+    let xz_int: int = x // z
+    print("  x / y = ${xy} (应输出: 5.0)")
+    print("  x / z = ${xz} (应输出: 12.5)")
+    print("  x // z = ${xz_int} (应输出: 12)")
+    print("")
+    
+    # 浮点数除法
+    let a: double = 10.0
+    let b: double = 2.5
+    let c: double = -2.0
+    
+    print("4. 浮点数除法:")
+    print("  a = ${a}, b = ${b}, c = ${c}")
+    let ab: double = a / b
+    let ac: double = a / c
+    print("  a / b = ${ab} (应输出: 4.0)")
+    print("  a / c = ${ac} (应输出: -5.0)")
+    print("")
+    
+    # 混合类型除法
+    print("5. 整数和浮点数混合运算:")
+    let xa: double = x / a
+    let xb: double = x / b
+    let zc: double = z / c
+    print("  x / a = ${xa} (应输出: 10.0)")
+    print("  x / b = ${xb} (应输出: 40.0)")
+    print("  z / c = ${zc} (应输出: -4.0)")
+    print("")
+    
+    # 复杂表达式
+    print("6. 复杂表达式:")
+    let complex1: double = (x + y) / z
+    let complex2: double = (a * b) / c
+    print("  (x + y) / z = ${complex1} (应输出: 15.0)")
+    print("  (a * b) / c = ${complex2} (应输出: -12.5)")
+    print("")
+    
+    # 特殊情况说明
+    print("7. 特殊情况:")
+    print("  除以 0 会导致运行时错误，请在编程时注意检查除数是否为 0")
+    print("  x / 1 = ${x/1} (应输出: 100)")
+    
+    print("")
+    print("除法测试完成！")
+    return 0
+}

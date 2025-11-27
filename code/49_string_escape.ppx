@@ -1,0 +1,9 @@
+# 字符串转义字符测试
+
+func main(): int {
+    let newline: string = "第一行\n第二行"
+    print(newline)
+    let tab: string = "姓名:\t张三"
+    print(tab)
+    return 0
+}

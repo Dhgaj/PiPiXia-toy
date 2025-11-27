@@ -1,0 +1,66 @@
+# for 循环测试
+# 测试 for 范围循环
+
+func main(): int {
+    print("===== for 循环测试 =====")
+    print("")
+    
+    # 基本 for 循环 (范围)
+    print("1. 基本范围循环 (1..5):")
+    for i in 1..6 {
+        print("  i = ${i}")
+    }
+    print("")
+    
+    # 倒序循环
+    print("2. 倒序范围循环 (10..1):")
+    for j in 10..5 {
+        print("  j = ${j}")
+    }
+    print("")
+    
+    # 使用 for 循环求和
+    print("3. 使用 for 循环求和 (1..10):")
+    let total: int = 0
+    for k in 1..11 {
+        total = total + k
+    }
+    print("  total = ${total} (应输出: 55)")
+    print("")
+    
+    # 嵌套 for 循环
+    print("4. 嵌套 for 循环 (乘法表):")
+    for m in 1..4 {
+        for n in 1..4 {
+            let product: int = m * n
+            print("  ${m} * ${n} = ${product}")
+        }
+    }
+    print("")
+    
+    # 使用 for 计算阶乘
+    print("5. 计算阶乘 (5!):")
+    let fact: int = 1
+    for num in 1..6 {
+        fact = fact * num
+    }
+    print("  5! = ${fact} (应输出: 120)")
+    print("")
+    
+    # 斐波那契数列
+    print("6. 生成斐波那契数列:")
+    let a: int = 0
+    let b: int = 1
+    print("  ${a}")
+    print("  ${b}")
+    for i in 1..6 {
+        let next: int = a + b
+        print("  ${next}")
+        a = b
+        b = next
+    }
+    print("")
+    
+    print("for 循环测试完成！")
+    return 0
+}

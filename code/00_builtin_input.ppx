@@ -1,0 +1,9 @@
+# input() 内置函数测试（编译测试）
+
+func main(): int {
+    print("Enter your name: ", nowrap)
+    let name: string = input()
+    print("Hello, ", nowrap)
+    print(name)
+    return 0
+}

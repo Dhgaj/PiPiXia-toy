@@ -1,0 +1,8 @@
+# to_double() 内置函数测试
+
+func main(): int {
+    let x: int = 42
+    let y: double = to_double(x)
+    print(y)
+    return 0
+}

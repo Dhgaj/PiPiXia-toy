@@ -1,0 +1,7 @@
+# print nowrap 测试
+
+func main(): int {
+    print("Hello, ", nowrap)
+    print("World!")
+    return 0
+}

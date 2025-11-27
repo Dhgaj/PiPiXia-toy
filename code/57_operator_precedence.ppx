@@ -1,0 +1,9 @@
+# 运算符优先级测试
+
+func main(): int {
+    let result1: int = 2 + 3 * 4
+    print(result1)
+    let result2: int = (2 + 3) * 4
+    print(result2)
+    return 0
+}

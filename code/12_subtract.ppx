@@ -1,0 +1,9 @@
+# 减法运算测试
+
+func main(): int {
+    let a: int = 30
+    let b: int = 10
+    let diff: int = a - b
+    print(diff)
+    return 0
+}

@@ -1,0 +1,56 @@
+# 测试类型转换功能
+
+func test_int_to_double(x: int): double {
+    return x  # int -> double 自动转换
+}
+
+func test_double_to_int(x: double): int {
+    return x  # double -> int 自动转换（可能损失精度）
+}
+
+func test_mixed_params(a: int, b: double, c: string) {
+    print("混合参数测试:")
+    print("  int: ", nowrap)
+    print(a)
+    print("  double: ", nowrap) 
+    print(b)
+    print("  string: ", nowrap)
+    print(c)
+}
+
+func main(): int {
+    print("===== 类型转换测试 =====")
+    print("")
+    
+    print("测试1: 整数到浮点数转换")
+    let int_val: int = 42
+    let double_result: double = test_int_to_double(int_val)
+    print("  test_int_to_double(42) = ", nowrap)
+    print(double_result)
+    print("  (应输出: 42.000000)")
+    print("")
+    
+    print("测试2: 浮点数到整数转换")
+    let double_val: double = 3.14
+    let int_result: int = test_double_to_int(double_val)
+    print("  test_double_to_int(3.14) = ", nowrap)
+    print(int_result)
+    print("  (应输出: 3)")
+    print("")
+    
+    print("测试3: 混合类型参数传递")
+    test_mixed_params(123, 45.67, "Hello")
+    print("")
+    
+    print("测试4: 字符串插值中的类型转换")
+    let num: int = 100
+    let pi: double = 3.14159
+    let flag: bool = true
+    print("  插值测试: num=${num}, pi=${pi}, flag=${flag}")
+    print("  (应正确显示各种类型)")
+    print("")
+    
+    print("===== 测试完成 =====")
+
+    return 0
+}

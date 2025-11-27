@@ -1,0 +1,81 @@
+# 加法运算测试
+# 测试整数、浮点数的加法运算
+
+func main(): int {
+    print("========== 加法运算测试 ==========")
+    print("")
+    
+    # 整数常量加法
+    print("1. 整数常量加法:")
+    let r1: int = 10 + 20
+    let r2: int = -10 + 20
+    let r3: int = (-10) + (-20)
+    let r4: int = 10 + 20 + 30
+    print("  10 + 20 = ${r1} (应输出: 30)")
+    print("  -10 + 20 = ${r2} (应输出: 10)")
+    print("  (-10) + (-20) = ${r3} (应输出: -30)")
+    print("  10 + 20 + 30 = ${r4} (应输出: 60)")
+    print("")
+    
+    # 整数变量加法
+    let x: int = 15
+    let y: int = 25
+    let z: int = -10
+    
+    print("2. 整数变量加法:")
+    print("  x = ${x}, y = ${y}, z = ${z}")
+    let xy: int = x + y
+    let xz: int = x + z
+    let xyz: int = x + y + z
+    print("  x + y = ${xy} (应输出: 40)")
+    print("  x + z = ${xz} (应输出: 5)")
+    print("  x + y + z = ${xyz} (应输出: 30)")
+    print("")
+    
+    # 浮点数加法
+    let a: double = 10.5
+    let b: double = 20.3
+    let c: double = -5.8
+    
+    print("3. 浮点数加法:")
+    print("  a = ${a}, b = ${b}, c = ${c}")
+    let ab: double = a + b
+    let ac: double = a + c
+    let abc: double = a + b + c
+    let pi_approx: double = 3.14 + 2.86
+    print("  a + b = ${ab} (应输出: 30.8)")
+    print("  a + c = ${ac} (应输出: 4.7)")
+    print("  a + b + c = ${abc} (应输出: 25.0)")
+    print("  3.14 + 2.86 = ${pi_approx} (应输出: 6.0)")
+    print("")
+    
+    # 混合类型加法
+    print("4. 整数和浮点数混合运算:")
+    let xa: double = x + a
+    let yb: double = y + b
+    let zc: double = z + c
+    print("  x + a = ${xa} (应输出: 25.5)")
+    print("  y + b = ${yb} (应输出: 45.3)")
+    print("  z + c = ${zc} (应输出: -15.8)")
+    print("")
+    
+    # 复杂表达式
+    print("5. 复杂表达式:")
+    let complex1: double = (x + y) + (a + b)
+    let complex2: double = x + 5 + a - 2.5
+    print("  (x + y) + (a + b) = ${complex1} (应输出: 70.8)")
+    print("  x + 5 + a - 2.5 = ${complex2} (应输出: 28.0)")
+    print("")
+    
+    # 边界值测试
+    print("6. 边界值测试:")
+    let zero: int = 0
+    let xz_result: int = x + zero
+    let float_sum: double = 0.1 + 0.2
+    print("  x + 0 = ${xz_result} (应输出: 15)")
+    print("  0.1 + 0.2 = ${float_sum} (应输出: 0.3)")
+    print("")
+    
+    print("加法测试完成！")
+    return 0
+}

@@ -1,0 +1,7 @@
+# 数组声明测试
+
+func main(): int {
+    let numbers: int[5] = [10, 20, 30, 40, 50]
+    print(numbers[0])
+    return 0
+}

@@ -1,0 +1,63 @@
+# 比较运算符综合测试
+# 测试所有比较运算符 ==, !=, <, <=, >, >=
+
+func main(): int {
+    print("===== 比较运算符测试 =====")
+    print("")
+    
+    # 整数比较
+    print("1. 整数比较:")
+    let a: int = 10
+    let b: int = 20
+    let c: int = 10
+    
+    print("  ${a} == ${b}: ${a == b} (应输出: false)")
+    print("  ${a} == ${c}: ${a == c} (应输出: true)")
+    print("  ${a} != ${b}: ${a != b} (应输出: true)")
+    print("  ${a} < ${b}: ${a < b} (应输出: true)")
+    print("  ${a} <= ${c}: ${a <= c} (应输出: true)")
+    print("  ${b} > ${a}: ${b > a} (应输出: true)")
+    print("  ${a} >= ${c}: ${a >= c} (应输出: true)")
+    print("")
+    
+    # 浮点数比较
+    print("2. 浮点数比较:")
+    let x: double = 3.14
+    let y: double = 2.71
+    let z: double = 3.14
+    
+    print("  ${x} == ${z}: ${x == z} (应输出: true)")
+    print("  ${x} != ${y}: ${x != y} (应输出: true)")
+    print("  ${x} > ${y}: ${x > y} (应输出: true)")
+    print("  ${y} < ${x}: ${y < x} (应输出: true)")
+    print("")
+    
+    # 字符比较
+    print("3. 字符比较:")
+    let ch1: char = 'A'
+    let ch2: char = 'B'
+    let ch3: char = 'A'
+    
+    print("  ch1 == ch3: ${ch1 == ch3} (应输出: true)")
+    print("  ch1 != ch2: ${ch1 != ch2} (应输出: true)")
+    print("  ch1 < ch2: ${ch1 < ch2} (应输出: true)")
+    print("")
+    
+    # 比较链
+    print("4. 多重比较:")
+    let n1: int = 5
+    let n2: int = 10
+    let n3: int = 15
+    
+    if ((n1 < n2) && (n2 < n3)) {
+        print("  ${n1} < ${n2} < ${n3}: 正确")
+    }
+    
+    if ((n1 <= 5) && (n3 >= 15)) {
+        print("  边界检查通过")
+    }
+    print("")
+    
+    print("比较运算符测试完成！")
+    return 0
+}

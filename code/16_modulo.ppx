@@ -1,0 +1,9 @@
+# 取模运算测试
+
+func main(): int {
+    let a: int = 17
+    let b: int = 5
+    let remainder: int = a % b
+    print(remainder)
+    return 0
+}

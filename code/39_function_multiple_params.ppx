@@ -1,0 +1,11 @@
+# 多参数函数测试
+
+func calculateArea(width: int, height: int): int {
+    return width * height
+}
+
+func main(): int {
+    let area: int = calculateArea(5, 8)
+    print(area)
+    return 0
+}

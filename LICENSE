@@ -1,0 +1,98 @@
+PiPiXia Programming Language Compiler - Proprietary License
+
+Copyright (c) 2025 Dhgaj (https://github.com/Dhgaj)
+All rights reserved.
+
+TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+1. DEFINITIONS
+
+"License" refers to the terms and conditions for use, reproduction, and 
+distribution as defined by Sections 1 through 9 of this document.
+
+"Licensor" refers to the copyright owner: Dhgaj (GitHub: https://github.com/Dhgaj)
+
+"You" (or "Your") refers to an individual or Legal Entity exercising 
+permissions granted by this License.
+
+"Work" refers to the PiPiXia Programming Language Compiler and all associated 
+source code, documentation, and materials.
+
+2. GRANT OF COPYRIGHT LICENSE
+
+Subject to the terms and conditions of this License, the Licensor hereby grants 
+to You a limited, non-exclusive, non-transferable license to use the Work solely 
+for educational, research, and non-commercial purposes, subject to the following 
+restrictions:
+
+3. RESTRICTIONS
+
+a) ATTRIBUTION REQUIREMENT: Any use, modification, or distribution of the Work 
+   MUST include prominent attribution to the original author:
+   "Based on PiPiXia Compiler by Dhgaj (https://github.com/Dhgaj)"
+
+b) NO COMMERCIAL USE: You may NOT use the Work or any derivative works for 
+   commercial purposes without explicit written permission from the Licensor.
+
+c) NO REDISTRIBUTION: You may NOT redistribute, publish, or make available 
+   the Work or any derivative works without explicit written permission from 
+   the Licensor.
+
+d) NO MODIFICATION WITHOUT ATTRIBUTION: Any modifications to the Work MUST 
+   clearly indicate the changes made and MUST retain all original copyright 
+   notices and attribution requirements.
+
+e) NO PATENT GRANTS: This License does not grant any patent rights.
+
+4. EDUCATIONAL AND RESEARCH USE
+
+You may use the Work for:
+- Educational purposes (learning, teaching, academic research)
+- Personal study and experimentation
+- Non-commercial research projects
+
+PROVIDED THAT all attribution requirements are met.
+
+5. PROHIBITED USES
+
+You may NOT:
+- Use the Work for any commercial purposes
+- Remove or modify copyright notices or attribution requirements
+- Claim ownership of the Work or any substantial portions thereof
+- Use the Work in any way that competes with the Licensor's interests
+- Create derivative works for commercial distribution
+
+6. DISCLAIMER OF WARRANTY
+
+THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER 
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS IN THE WORK.
+
+7. LIMITATION OF LIABILITY
+
+IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY DIRECT, INDIRECT, 
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT 
+NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY 
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF 
+THIS WORK, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+8. TERMINATION
+
+This License and the rights granted hereunder will terminate automatically 
+if You fail to comply with terms herein. Upon termination, You must cease 
+all use of the Work and destroy all copies in Your possession.
+
+9. CONTACT INFORMATION
+
+For permissions beyond the scope of this License, please contact:
+GitHub: https://github.com/Dhgaj
+
+---
+
+By using this Work, You acknowledge that You have read this License, 
+understand it, and agree to be bound by its terms and conditions.

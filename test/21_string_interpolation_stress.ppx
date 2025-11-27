@@ -1,0 +1,69 @@
+# 字符串插值压力测试 - 测试动态缓冲区
+
+func main(): int {
+    print("===== 字符串插值压力测试 =====")
+    print("")
+    
+    # 测试1: 短字符串插值
+    print("测试1: 短字符串插值")
+    let name: string = "Alice"
+    let age: int = 25
+    print("Hello ${name}, you are ${age} years old")
+    print("  (应输出: Hello Alice, you are 25 years old)")
+    print("")
+    
+    # 测试2: 长字符串插值（超过20字符的数字）
+    print("测试2: 长数字插值")
+    let big_num: int = 1234567890
+    print("Big number: ${big_num}")
+    print("  (应输出: Big number: 1234567890)")
+    print("")
+    
+    # 测试3: 浮点数插值
+    print("测试3: 浮点数插值")
+    let pi: double = 3.14159265358979
+    print("Pi value: ${pi}")
+    print("  (应输出: Pi value: 3.141593)")
+    print("")
+    
+    # 测试4: 多个插值表达式
+    print("测试4: 多个插值表达式")
+    let x: int = 100
+    let y: int = 200
+    let z: int = 300
+    print("Values: x=${x}, y=${y}, z=${z}")
+    print("  (应输出: Values: x=100, y=200, z=300)")
+    print("")
+    
+    # 测试5: 布尔值插值
+    print("测试5: 布尔值插值")
+    let flag1: bool = true
+    let flag2: bool = false
+    print("Flags: ${flag1} and ${flag2}")
+    print("  (应输出: Flags: true and false)")
+    print("")
+    
+    # 测试6: 混合类型插值
+    print("测试6: 混合类型插值")
+    let count: int = 42
+    let ratio: double = 3.14
+    let active: bool = true
+    print("Count: ${count}, Ratio: ${ratio}, Active: ${active}")
+    print("  (应输出: Count: 42, Ratio: 3.140000, Active: true)")
+    print("")
+    
+    # 测试7: 超长字符串（测试动态缓冲区）
+    print("测试7: 超长字符串插值")
+    let num1: int = 111111111
+    let num2: int = 222222222
+    let num3: int = 333333333
+    let num4: int = 444444444
+    let num5: int = 555555555
+    print("Numbers: ${num1}, ${num2}, ${num3}, ${num4}, ${num5}")
+    print("  (应输出: Numbers: 111111111, 222222222, 333333333, 444444444, 555555555)")
+    print("")
+    
+    print("===== 所有测试完成 =====")
+    
+    return 0
+}

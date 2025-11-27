@@ -1,0 +1,119 @@
+# PiPiXia 控制流语句示例
+# 展示 break, continue 和 switch/case 的使用
+
+func main(): int {
+    print("===== PiPiXia 控制流语句示例 =====")
+    print("")
+    
+    # === Break 示例 ===
+    print("1. Break 示例：查找第一个大于50的数")
+    for i in 1..100 {
+        if (i > 50) {
+            print("  找到了：", nowrap)
+            print(i)
+            break  # 找到后立即退出循环
+        }
+    }
+    print("")
+    
+    # === Continue 示例 ===
+    print("2. Continue 示例：只打印1-10中的奇数")
+    for i in 1..11 {
+        if (i % 2 == 0) {
+            continue  # 跳过偶数
+        }
+        print("  ", nowrap)
+        print(i)
+    }
+    print("")
+    
+    # === Switch/Case 示例 ===
+    print("3. Switch/Case 示例：评分等级")
+    let score: int = 85
+    
+    print("  分数：", nowrap)
+    print(score)
+    print("  等级：", nowrap)
+    
+    switch (score // 10) {
+        case 10: {
+            print("A+ 优秀")
+        }
+        case 9: {
+            print("A 优秀")
+        }
+        case 8: {
+            print("B 良好")
+        }
+        case 7: {
+            print("C 中等")
+        }
+        case 6: {
+            print("D 及格")
+        }
+        default: {
+            print("F 不及格")
+        }
+    }
+    print("")
+    
+    # === 综合示例 ===
+    print("4. 综合示例：素数查找（前10个）")
+    let count: int = 0
+    let num: int = 2
+    
+    while (count < 10) {
+        let isPrime: int = 1
+        
+        # 检查是否为素数
+        for i in 2..num {
+            if (i >= num) {
+                break
+            }
+            if (num % i == 0) {
+                isPrime = 0
+                break
+            }
+        }
+        
+        # 如果是素数，打印
+        if (isPrime == 1) {
+            print("  第", nowrap)
+            print(count + 1, nowrap)
+            print("个素数：", nowrap)
+            print(num)
+            count = count + 1
+        }
+        
+        num = num + 1
+        
+        # 安全限制，避免无限循环
+        if (num > 100) {
+            break
+        }
+    }
+    print("")
+    
+    # === 周几判断 ===
+    print("5. 周几判断示例")
+    for day in 1..8 {
+        print("  Day ", nowrap)
+        print(day, nowrap)
+        print(": ", nowrap)
+        
+        switch day {
+            case 1: { print("Monday") }
+            case 2: { print("Tuesday") }
+            case 3: { print("Wednesday") }
+            case 4: { print("Thursday") }
+            case 5: { print("Friday") }
+            case 6: { print("Saturday") }
+            case 7: { print("Sunday") }
+            default: { print("Invalid day") }
+        }
+    }
+    print("")
+    
+    print("===== 示例结束 =====")
+    return 0
+}

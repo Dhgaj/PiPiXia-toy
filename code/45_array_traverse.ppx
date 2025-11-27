@@ -1,0 +1,9 @@
+# 数组遍历测试
+
+func main(): int {
+    let numbers: int[5] = [10, 20, 30, 40, 50]
+    for i in 0..5 {
+        print(numbers[i])
+    }
+    return 0
+}

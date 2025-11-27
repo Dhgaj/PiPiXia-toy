@@ -1,0 +1,11 @@
+# 带参数函数测试
+
+func sayHello(name: string) {
+    print("Hello, ", nowrap)
+    print(name)
+}
+
+func main(): int {
+    sayHello("Alice")
+    return 0
+}

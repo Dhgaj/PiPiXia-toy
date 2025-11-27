@@ -1,0 +1,20 @@
+# switch 语句测试
+
+func main(): int {
+    let day: int = 3
+    switch day {
+        case 1: {
+            print("星期一")
+        }
+        case 2: {
+            print("星期二")
+        }
+        case 3: {
+            print("星期三")
+        }
+        default: {
+            print("其他")
+        }
+    }
+    return 0
+}

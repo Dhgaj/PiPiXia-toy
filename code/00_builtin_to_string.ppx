@@ -1,0 +1,8 @@
+# to_string() 内置函数测试
+
+func main(): int {
+    let num: int = 123
+    let str: string = to_string(num)
+    print(str)
+    return 0
+}

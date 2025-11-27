@@ -1,0 +1,117 @@
+# 函数定义和调用测试
+# 测试函数参数、返回值、递归
+
+# 无参数无返回值函数
+func greet() {
+    print("  Hello from greet()!")
+}
+
+# 有参数无返回值函数
+func say_hello(name: string) {
+    print("  Hello, ${name}!")
+}
+
+# 有返回值函数
+func add(a: int, b: int): int {
+    return a + b
+}
+
+# 多参数函数
+func calculate(x: int, y: int, z: int): int {
+    return x + y * z
+}
+
+# 浮点数函数
+func average(a: double, b: double): double {
+    return (a + b) / 2.0
+}
+
+# 递归函数 - 阶乘
+func factorial(n: int): int {
+    if (n <= 1) {
+        return 1
+    } else {
+        return n * factorial(n - 1)
+    }
+}
+
+# 递归函数 - 斐波那契
+func fibonacci(n: int): int {
+    if (n <= 1) {
+        return n
+    } else {
+        return fibonacci(n - 1) + fibonacci(n - 2)
+    }
+}
+
+# 数组参数函数
+func sum_array(arr: int[5]): int {
+    let total: int = 0
+    let i: int = 0
+    while (i < 5) {
+        total  += arr[i]
+        i = i + 1
+    }
+    return total
+}
+
+func main(): int {
+    print("===== 函数测试 =====")
+    print("")
+    
+    # 调用无参数函数
+    print("1. 无参数函数:")
+    greet()
+    print("")
+    
+    # 调用有参数函数
+    print("2. 有参数函数:")
+    say_hello("PiPiXia")
+    print("")
+    
+    # 调用有返回值函数
+    print("3. 有返回值函数:")
+    let result1: int = add(10, 20)
+    print("  add(10, 20) = ${result1} (应输出: 30)")
+    print("")
+    
+    # 多参数函数
+    print("4. 多参数函数:")
+    let result2: int = calculate(2, 3, 4)
+    print("  calculate(2, 3, 4) = ${result2} (应输出: 14)")
+    print("")
+    
+    # 浮点数函数
+    print("5. 浮点数函数:")
+    let avg: double = average(5.5, 8.5)
+    print("  average(5.5, 8.5) = ${avg} (应输出: 7.0)")
+    print("")
+    
+    # 递归 - 阶乘
+    print("6. 递归函数 - 阶乘:")
+    let fact5: int = factorial(5)
+    print("  factorial(5) = ${fact5} (应输出: 120)")
+    
+    let fact6: int = factorial(6)
+    print("  factorial(6) = ${fact6} (应输出: 720)")
+    print("")
+    
+    # 递归 - 斐波那契
+    print("7. 递归函数 - 斐波那契:")
+    let fib5: int = fibonacci(5)
+    print("  fibonacci(5) = ${fib5} (应输出: 5)")
+    
+    let fib7: int = fibonacci(7)
+    print("  fibonacci(7) = ${fib7} (应输出: 13)")
+    print("")
+    
+    # 数组参数
+    print("8. 数组参数函数:")
+    let arr: int[5] = [1, 2, 3, 4, 5]
+    let sum: int = sum_array(arr)
+    print("  sum_array([1,2,3,4,5]) = ${sum} (应输出: 15)")
+    print("")
+    
+    print("函数测试完成！")
+    return 0
+}

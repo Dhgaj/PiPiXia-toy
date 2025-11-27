@@ -1,0 +1,8 @@
+# len() 内置函数测试
+
+func main(): int {
+    let str: string = "Hello"
+    let length: int = len(str)
+    print(length)
+    return 0
+}

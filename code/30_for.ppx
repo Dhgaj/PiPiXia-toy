@@ -1,0 +1,8 @@
+# for 循环测试
+
+func main(): int {
+    for i in 0..5 {
+        print(i)
+    }
+    return 0
+}

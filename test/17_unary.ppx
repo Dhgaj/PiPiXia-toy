@@ -1,0 +1,72 @@
+# 一元运算符测试
+# 测试负号、逻辑非
+
+func main(): int {
+    print("===== 一元运算符测试 =====")
+    print("")
+    
+    # 负号运算
+    print("1. 负号运算 (-):")
+    let x: int = 10
+    let neg_x: int = -x
+    print("  x = ${x}")
+    print("  -x = ${neg_x} (应输出: -10)")
+    
+    let y: int = -5
+    let neg_y: int = -y
+    print("  y = ${y}")
+    print("  -y = ${neg_y} (应输出: 5)")
+    print("")
+    
+    # 浮点数负号
+    print("2. 浮点数负号:")
+    let pi: double = 3.14
+    let neg_pi: double = -pi
+    print("  pi = ${pi}")
+    print("  -pi = ${neg_pi} (应输出: -3.14)")
+    print("")
+    
+    # 表达式中的负号
+    print("3. 表达式中的负号:")
+    let a: int = 10
+    let b: int = 5
+    let result1: int = -a + b
+    let result2: int = a + (-b)
+    print("  -a + b = ${result1} (应输出: -5)")
+    print("  a + (-b) = ${result2} (应输出: 5)")
+    print("")
+    
+    # 逻辑非
+    print("4. 逻辑非 (!):")
+    let t: bool = true
+    let f: bool = false
+    print("  !true = ${!t} (应输出: false)")
+    print("  !false = ${!f} (应输出: true)")
+    
+    let flag: bool = !t
+    print("  flag = !true = ${flag} (应输出: false)")
+    print("")
+    
+    # 双重否定
+    print("5. 双重否定:")
+    let original: bool = true
+    let double_neg: bool = !!original
+    print("  !!true = ${double_neg} (应输出: true)")
+    print("")
+    
+    # 条件中的逻辑非
+    print("6. 条件中使用逻辑非:")
+    let ready: bool = false
+    if (!ready) {
+        print("  系统未就绪")
+    }
+    
+    let error: bool = false
+    if (!error) {
+        print("  没有错误")
+    }
+    print("")
+    
+    print("一元运算符测试完成！")
+    return 0
+}

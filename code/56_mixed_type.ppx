@@ -1,0 +1,9 @@
+# 混合类型运算测试
+
+func main(): int {
+    let a: int = 10
+    let b: double = 3.5
+    let result: double = a + b
+    print(result)
+    return 0
+}

@@ -1,0 +1,127 @@
+# 测试函数结束时的临时内存管理
+
+func noReturnFunction() {
+    print("测试1: 无 return 语句的函数")
+    let temp: string = "临时字符串"
+    print("  处理临时数据: ", nowrap)
+    print(temp)
+    # 函数结束时应该清理临时内存
+}
+
+func implicitReturnFunction() {
+    print("测试2: 隐式返回的函数")
+    let msg: string = "消息"
+    print("  消息: ", nowrap)
+    print(msg)
+    # 没有显式 return，依赖隐式返回
+}
+
+func withStringOperation() {
+    print("测试3: 字符串操作后无 return")
+    let count: int = 42
+    let text: string = "计数: ${count}"
+    print("  ", nowrap)
+    print(text)
+    # 字符串插值产生临时内存
+}
+
+func conditionalNoReturn(value: int) {
+    print("测试4: 条件分支可能无 return")
+    if (value > 0) {
+        print("  正数分支（无return）")
+    } else {
+        print("  负数/零分支（无return）")
+    }
+    # 两个分支都没有 return
+}
+
+func partialReturn(value: int) {
+    print("测试5: 部分路径有 return")
+    if (value > 10) {
+        print("  大于10，提前返回")
+        return
+    }
+    print("  小于等于10，执行到结尾")
+    # 这条路径没有 return，需要隐式返回
+}
+
+func loopNoReturn() {
+    print("测试6: 循环后无 return")
+    for i in 0..3 {
+        let temp: string = "迭代"
+        print("  ", nowrap)
+        print(temp, nowrap)
+        print(" ", nowrap)
+        print(i)
+    }
+    # 循环结束后没有 return
+}
+
+func repeatedCalls() {
+    print("测试7: 重复调用测试")
+    # 多次调用其他函数，检查内存是否累积
+    noReturnFunction()
+    implicitReturnFunction()
+    withStringOperation()
+}
+
+func nestedBlocks() {
+    print("测试8: 嵌套代码块")
+    {
+        let inner1: string = "内部块1"
+        print("  ", nowrap)
+        print(inner1)
+    }
+    {
+        let inner2: string = "内部块2"
+        print("  ", nowrap)
+        print(inner2)
+    }
+    # 嵌套块后没有 return
+}
+
+func main(): int {
+    print("===== 函数结束时内存管理测试 =====")
+    print("")
+    
+    noReturnFunction()
+    print("")
+    
+    implicitReturnFunction()
+    print("")
+    
+    withStringOperation()
+    print("")
+    
+    conditionalNoReturn(5)
+    print("")
+    
+    conditionalNoReturn(-3)
+    print("")
+    
+    partialReturn(15)
+    print("")
+    
+    partialReturn(5)
+    print("")
+    
+    loopNoReturn()
+    print("")
+    
+    repeatedCalls()
+    print("")
+    
+    nestedBlocks()
+    print("")
+    
+    print("测试9: 大量重复调用（内存压力测试）")
+    for i in 0..10 {
+        noReturnFunction()
+        implicitReturnFunction()
+    }
+    print("  完成10次重复调用")
+    print("")
+    
+    print("===== 测试完成 =====")
+    return 0
+}

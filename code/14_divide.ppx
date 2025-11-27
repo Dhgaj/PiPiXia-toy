@@ -1,0 +1,9 @@
+# 除法运算测试
+
+func main(): int {
+    let a: int = 20
+    let b: int = 4
+    let quotient: int = a / b
+    print(quotient)
+    return 0
+}

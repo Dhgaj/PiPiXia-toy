@@ -1,0 +1,9 @@
+# 变量重新赋值测试
+
+func main(): int {
+    let x: int = 10
+    print(x)
+    x = 20
+    print(x)
+    return 0
+}

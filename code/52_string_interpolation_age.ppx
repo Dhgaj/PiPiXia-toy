@@ -1,0 +1,9 @@
+# 字符串插值年龄测试
+
+func main(): int {
+    let name: string = "Alice"
+    let age: int = 25
+    let info: string = "${name} is ${age} years old"
+    print(info)
+    return 0
+}

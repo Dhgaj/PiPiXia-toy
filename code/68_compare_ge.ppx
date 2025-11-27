@@ -1,0 +1,15 @@
+# 大于等于比较测试
+
+func main(): int {
+    let a: int = 15
+    let b: int = 10
+    let c: int = 15
+    
+    let result1: bool = a >= b
+    print(result1)
+    
+    let result2: bool = a >= c
+    print(result2)
+    
+    return 0
+}

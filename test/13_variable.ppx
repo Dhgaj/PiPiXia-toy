@@ -1,0 +1,90 @@
+# 变量声明测试
+# 测试 let 和 const 声明
+
+func main(): int {
+    print("===== 变量声明测试 =====")
+    print("")
+    
+    # let 声明 - 整数
+    print("1. let 声明整数:")
+    let x: int = 10
+    print("  x = ${x}")
+    x = 20
+    print("  修改后 x = ${x}")
+    print("")
+    
+    # let 声明 - 浮点数
+    print("2. let 声明浮点数:")
+    let pi: double = 3.14159
+    print("  pi = ${pi}")
+    pi = 3.14
+    print("  修改后 pi = ${pi}")
+    print("")
+    
+    # let 声明 - 字符串
+    print("3. let 声明字符串:")
+    let name: string = "PiPiXia"
+    print("  name = ${name}")
+    name = "PPX"
+    print("  修改后 name = ${name}")
+    print("")
+    
+    # let 声明 - 字符
+    print("4. let 声明字符:")
+    let ch: char = 'A'
+    print("  ch = ${ch}")
+    ch = 'Z'
+    print("  修改后 ch = ${ch}")
+    print("")
+    
+    # let 声明 - 布尔
+    print("5. let 声明布尔:")
+    let flag: bool = true
+    print("  flag = ${flag}")
+    flag = false
+    print("  修改后 flag = ${flag}")
+    print("")
+    
+    # const 声明
+    print("6. const 声明:")
+    const MAX: int = 100
+    const MIN: int = 0
+    const NAME: string = "PiPiXia Compiler"
+    print("  MAX = ${MAX}")
+    print("  MIN = ${MIN}")
+    print("  NAME = ${NAME}")
+    print("")
+    
+    # 多个变量声明
+    print("7. 多个变量:")
+    let a: int = 1
+    let b: int = 2
+    let c: int = 3
+    print("  a = ${a}, b = ${b}, c = ${c}")
+    print("")
+    
+    # 变量作用域 - 代码块
+    print("8. 代码块作用域:")
+    let outer: int = 100
+    print("  外层 outer = ${outer}")
+    if (true) {
+        let inner: int = 200
+        print("  内层 inner = ${inner}")
+        print("  内层访问外层 outer = ${outer}")
+    }
+    print("  回到外层 outer = ${outer}")
+    print("")
+    
+    # 变量初始化表达式
+    print("9. 变量初始化表达式:")
+    let m: int = 5
+    let n: int = 10
+    let sum: int = m + n
+    let product: int = m * n
+    print("  sum = ${sum} (应输出: 15)")
+    print("  product = ${product} (应输出: 50)")
+    print("")
+    
+    print("变量声明测试完成！")
+    return 0
+}

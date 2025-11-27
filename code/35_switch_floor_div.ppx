@@ -1,0 +1,20 @@
+# switch 整除测试
+
+func main(): int {
+    let score: int = 85
+    switch (score // 10) {
+        case 10: {
+            print("优秀")
+        }
+        case 9: {
+            print("优秀")
+        }
+        case 8: {
+            print("良好")
+        }
+        default: {
+            print("及格")
+        }
+    }
+    return 0
+}

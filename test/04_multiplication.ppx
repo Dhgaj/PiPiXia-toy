@@ -1,0 +1,80 @@
+# 乘法运算测试
+# 测试整数、浮点数的乘法运算
+
+func main(): int {
+    print("========== 乘法运算测试 ==========")
+    print("")
+    
+    # 整数常量乘法
+    print("1. 整数常量乘法:")
+    let r1: int = 10 * 20
+    let r2: int = -10 * 20
+    let r3: int = -10 * -20
+    let r4: int = 2 * 3 * 4
+    print("  10 * 20 = ${r1} (应输出: 200)")
+    print("  -10 * 20 = ${r2} (应输出: -200)")
+    print("  -10 * -20 = ${r3} (应输出: 200)")
+    print("  2 * 3 * 4 = ${r4} (应输出: 24)")
+    print("")
+    
+    # 整数变量乘法
+    let x: int = 5
+    let y: int = 10
+    let z: int = -2
+    
+    print("2. 整数变量乘法:")
+    print("  x = ${x}, y = ${y}, z = ${z}")
+    let xy: int = x * y
+    let xz: int = x * z
+    let xyz: int = x * y * z
+    print("  x * y = ${xy} (应输出: 50)")
+    print("  x * z = ${xz} (应输出: -10)")
+    print("  x * y * z = ${xyz} (应输出: -100)")
+    print("")
+    
+    # 浮点数乘法
+    let a: double = 2.5
+    let b: double = 4.0
+    let c: double = -1.5
+    
+    print("3. 浮点数乘法:")
+    print("  a = ${a}, b = ${b}, c = ${c}")
+    let ab: double = a * b
+    let ac: double = a * c
+    let abc: double = a * b * c
+    print("  a * b = ${ab} (应输出: 10.0)")
+    print("  a * c = ${ac} (应输出: -3.75)")
+    print("  a * b * c = ${abc} (应输出: -15.0)")
+    print("")
+    
+    # 混合类型乘法
+    print("4. 整数和浮点数混合运算:")
+    let xa: double = x * a
+    let yb: double = y * b
+    let zc: double = z * c
+    print("  x * a = ${xa} (应输出: 12.5)")
+    print("  y * b = ${yb} (应输出: 40.0)")
+    print("  z * c = ${zc} (应输出: 3.0)")
+    print("")
+    
+    # 复杂表达式
+    print("5. 复杂表达式:")
+    let complex1: double = (x + y) * a
+    let complex2: double = (x * y) + (a * b)
+    print("  (x + y) * a = ${complex1} (应输出: 37.5)")
+    print("  (x * y) + (a * b) = ${complex2} (应输出: 60.0)")
+    print("")
+    
+    # 边界值测试
+    print("6. 边界值测试:")
+    let zero: int = 0
+    let one: int = 1
+    let x_zero: int = x * zero
+    let x_one: int = x * one
+    print("  x * 0 = ${x_zero} (应输出: 0)")
+    print("  x * 1 = ${x_one} (应输出: 5)")
+    print("")
+    
+    print("乘法测试完成！")
+    return 0
+}

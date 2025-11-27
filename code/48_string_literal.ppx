@@ -1,0 +1,7 @@
+# 字符串字面量测试
+
+func main(): int {
+    let message: string = "Hello, World!"
+    print(message)
+    return 0
+}

@@ -1,0 +1,8 @@
+# for 范围测试
+
+func main(): int {
+    for num in 1..11 {
+        print(num)
+    }
+    return 0
+}

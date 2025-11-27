@@ -1,0 +1,149 @@
+# 测试 return 语句中的临时内存管理
+
+func createMessage(): string {
+    return "消息字符串"
+}
+
+func testEarlyReturn(value: int): int {
+    print("测试1: 提前返回")
+    if (value < 0) {
+        print("  负数，提前返回")
+        # return 前应该清理临时内存
+        return 0
+    }
+    print("  正数，正常执行")
+    return value
+}
+
+func testReturnWithExpression(a: int, b: int): int {
+    print("测试2: return 带表达式")
+    # 表达式求值可能创建临时内存
+    return a + b * 2
+}
+
+func testReturnWithStringInterpolation(code: int): string {
+    print("测试3: return 带字符串插值")
+    # 字符串插值会创建临时内存
+    return "错误代码: ${code}"
+}
+
+func testReturnWithFunctionCall(): string {
+    print("测试4: return 带函数调用")
+    # 函数调用可能返回临时内存
+    return createMessage()
+}
+
+func testMultipleReturns(value: int): string {
+    print("测试5: 多个 return 路径")
+    if (value < 0) {
+        return "负数"
+    } else {
+        if (value == 0) {
+            return "零"
+        } else {
+            return "正数"
+        }
+    }
+}
+
+func testReturnInLoop(): int {
+    print("测试6: 循环中的 return")
+    for i in 0..10 {
+        if (i == 5) {
+            print("  找到5，返回")
+            return i
+        }
+    }
+    return -1
+}
+
+func testVoidReturn() {
+    print("测试7: void 函数的 return")
+    let value: int = 42
+    if (value > 0) {
+        print("  提前返回（void）")
+        # void 返回也应该清理临时内存
+        return
+    }
+    print("  这行不应该执行")
+}
+
+func calculateSum(n: int): int {
+    print("测试8: 递归函数的 return")
+    if (n <= 0) {
+        return 0
+    }
+    # 递归调用中的 return
+    return n + calculateSum(n - 1)
+}
+
+func testReturnWithTypeConversion(value: double): int {
+    print("测试9: return 带类型转换")
+    # 类型转换可能创建临时对象
+    return value
+}
+
+func main(): int {
+    print("===== return 语句内存管理测试 =====")
+    print("")
+    
+    let result1: int = testEarlyReturn(-5)
+    print("  结果: ", nowrap)
+    print(result1)
+    print("  (应输出: 0)")
+    print("")
+    
+    let result2: int = testEarlyReturn(10)
+    print("  结果: ", nowrap)
+    print(result2)
+    print("  (应输出: 10)")
+    print("")
+    
+    let result3: int = testReturnWithExpression(3, 4)
+    print("  结果: ", nowrap)
+    print(result3)
+    print("  (应输出: 11)")
+    print("")
+    
+    let result4: string = testReturnWithStringInterpolation(404)
+    print("  结果: ", nowrap)
+    print(result4)
+    print("  (应输出: 错误代码: 404)")
+    print("")
+    
+    let result5: string = testReturnWithFunctionCall()
+    print("  结果: ", nowrap)
+    print(result5)
+    print("  (应输出: 消息字符串)")
+    print("")
+    
+    let result6: string = testMultipleReturns(5)
+    print("  结果: ", nowrap)
+    print(result6)
+    print("  (应输出: 正数)")
+    print("")
+    
+    let result7: int = testReturnInLoop()
+    print("  结果: ", nowrap)
+    print(result7)
+    print("  (应输出: 5)")
+    print("")
+    
+    testVoidReturn()
+    print("")
+    
+    let result8: int = calculateSum(5)
+    print("  sum(5) = ", nowrap)
+    print(result8)
+    print("  (应输出: 15)")
+    print("")
+    
+    let result9: int = testReturnWithTypeConversion(3.14)
+    print("  结果: ", nowrap)
+    print(result9)
+    print("  (应输出: 3)")
+    print("")
+    
+    print("===== 测试完成 =====")
+    return 0
+}

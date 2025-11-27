@@ -1,0 +1,7 @@
+# 字符变量测试
+
+func main(): int {
+    let grade: char = 'A'
+    print(grade)
+    return 0
+}

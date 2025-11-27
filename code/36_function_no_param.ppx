@@ -1,0 +1,10 @@
+# 无参数函数测试
+
+func greet() {
+    print("Hello!")
+}
+
+func main(): int {
+    greet()
+    return 0
+}

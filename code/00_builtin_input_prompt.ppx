@@ -1,0 +1,8 @@
+# input() 带提示的测试
+
+func main(): int {
+    let name: string = input("Enter your name: ")
+    print("Hello, ", nowrap)
+    print(name)
+    return 0
+}

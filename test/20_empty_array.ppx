@@ -1,0 +1,30 @@
+# 空数组测试
+
+func main(): int {
+    print("===== 空数组测试 =====")
+    print("")
+    
+    # 测试1: 创建空数组（使用数组字面量）
+    print("测试1: 创建空数组")
+    let empty_arr: int[0] = []
+    print("  空数组创建成功 ✓")
+    print("")
+    
+    # 测试2: 非空数组对比
+    print("测试2: 非空数组对比")
+    let non_empty: int[3] = [1, 2, 3]
+    print("  非空数组[0] = ", nowrap)
+    print(non_empty[0])
+    print("  (应输出: 1)")
+    print("  非空数组[1] = ", nowrap)
+    print(non_empty[1])
+    print("  (应输出: 2)")
+    print("  非空数组[2] = ", nowrap)
+    print(non_empty[2])
+    print("  (应输出: 3)")
+    print("")
+    
+    print("===== 测试完成 =====")
+    
+    return 0
+}

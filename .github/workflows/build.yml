@@ -1,0 +1,84 @@
+name: Build PiPiXia Compiler
+
+on:
+  workflow_dispatch:  # 仅手动触发
+
+jobs:
+  build-ubuntu:
+    name: Build on Ubuntu
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        # 添加 LLVM 官方源以安装 LLVM 21
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+        sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+        sudo apt-get update
+        sudo apt-get install -y flex bison llvm-21-dev liblld-21-dev clang-21 make g++
+        # 设置 LLVM 21 为默认版本
+        sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-21 100
+
+    - name: Detect Platform & Generate Config
+      run: |
+        chmod +x scripts/01_detect_platform.sh
+        ./scripts/01_detect_platform.sh
+
+    - name: Build Compiler
+      run: make
+
+    - name: Run Tests
+      run: |
+        chmod +x scripts/07_build_code.sh
+        ./scripts/07_build_code.sh
+
+    - name: Upload Compiler Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: compiler-ubuntu-latest
+        path: compiler
+        retention-days: 30
+
+
+  build-macos:
+    name: Build on macOS
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        brew update
+        brew install llvm flex bison make
+        
+    - name: Configure PATH for Homebrew tools
+      run: |
+        echo "/opt/homebrew/opt/flex/bin" >> $GITHUB_PATH
+        echo "/opt/homebrew/opt/bison/bin" >> $GITHUB_PATH
+        echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
+
+    - name: Detect Platform & Generate Config
+      run: |
+        chmod +x scripts/01_detect_platform.sh
+        ./scripts/01_detect_platform.sh
+
+    - name: Build Compiler
+      run: make
+
+    - name: Run Tests
+      run: |
+        chmod +x scripts/07_build_code.sh
+        ./scripts/07_build_code.sh
+
+    - name: Upload Compiler Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: compiler-macos-latest
+        path: compiler
+        retention-days: 30

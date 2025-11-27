@@ -1,0 +1,8 @@
+# 字符串插值测试
+
+func main(): int {
+    let name: string = "Alice"
+    let greeting: string = "Hello, ${name}!"
+    print(greeting)
+    return 0
+}

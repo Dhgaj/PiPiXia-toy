@@ -1,0 +1,11 @@
+# try-catch 测试
+
+func main(): int {
+    try {
+        let result: int = 10 / 2
+        print(result)
+    } catch (e: string) {
+        print("捕获异常")
+    }
+    return 0
+}

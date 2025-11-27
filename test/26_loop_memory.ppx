@@ -1,0 +1,79 @@
+# 测试循环中的临时内存管理
+
+func getCondition(i: int): int {
+    print("  检查条件 i=", nowrap)
+    print(i)
+    return i
+}
+
+func main(): int {
+    print("===== 循环临时内存管理测试 =====")
+    print("")
+    
+    print("测试1: while 循环条件表达式内存清理")
+    let counter: int = 0
+    while counter < 5 {
+        print("  while 迭代 ", nowrap)
+        print(counter)
+        counter = counter + 1
+    }
+    print("  while 循环完成")
+    print("")
+    
+    print("测试2: while 循环体临时内存清理")
+    counter = 0
+    while counter < 3 {
+        let temp: string = "临时字符串"
+        print("  循环体内: counter=", nowrap)
+        print(counter)
+        counter = counter + 1
+    }
+    print("  循环体临时内存测试完成")
+    print("")
+    
+    print("测试3: for 循环临时内存清理")
+    for i in 0..5 {
+        print("  for 迭代 ", nowrap)
+        print(i)
+    }
+    print("  for 循环完成")
+    print("")
+    
+    print("测试4: 嵌套循环临时内存")
+    for i in 0..3 {
+        for j in 0..3 {
+            print("  嵌套循环 i=", nowrap)
+            print(i, nowrap)
+            print(", j=", nowrap)
+            print(j)
+        }
+    }
+    print("  嵌套循环完成")
+    print("")
+    
+    print("测试5: 长循环（1000次迭代）")
+    let sum: int = 0
+    for i in 0..1000 {
+        sum = sum + i
+    }
+    print("  sum = ", nowrap)
+    print(sum)
+    print("  (应输出: 499500)")
+    print("")
+    
+    print("测试6: while 循环中的字符串操作")
+    counter = 0
+    while counter < 5 {
+        let msg: string = "消息"
+        print("  ", nowrap)
+        print(msg, nowrap)
+        print(" ", nowrap)
+        print(counter)
+        counter = counter + 1
+    }
+    print("  while 字符串操作测试完成")
+    print("")
+    
+    print("===== 测试完成 =====")
+    return 0
+}

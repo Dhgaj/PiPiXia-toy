@@ -1,0 +1,9 @@
+# 布尔变量测试
+
+func main(): int {
+    let isTrue: bool = true
+    let isFalse: bool = false
+    print(isTrue)
+    print(isFalse)
+    return 0
+}

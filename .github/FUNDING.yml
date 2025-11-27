@@ -1,0 +1,21 @@
+# GitHub 资助配置
+# 支持 PiPiXia 编程语言编译器项目的开发
+
+# GitHub Sponsors 用户名
+github: [Dhgaj]
+
+# 其他平台的资助链接
+# patreon: # 你的 Patreon 用户名
+# open_collective: # 你的 Open Collective 项目名
+# ko_fi: # 你的 Ko-fi 用户名
+# tidelift: # Tidelift 包名
+# community_bridge: # 社区桥项目名
+# liberapay: # Liberapay 用户名
+# issuehunt: # IssueHunt 用户名
+# otechie: # Otechie 用户名
+# lfx_crowdfunding: # LFX Crowdfunding 项目名
+
+#ToDo
+# 自定义资助链接
+custom: 
+  - "https://github.com/Dhgaj"

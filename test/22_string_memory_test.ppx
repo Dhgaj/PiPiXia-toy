@@ -1,0 +1,46 @@
+# 字符串内存管理测试
+
+func main(): int {
+    print("===== 字符串内存管理测试 =====")
+    print("")
+    
+    # 测试1: 字符串拼接后赋值
+    print("测试1: 字符串拼接后赋值")
+    let a: string = "Hello"
+    let b: string = "World"
+    let c: string = a + " " + b
+    print("  结果: ${c}")
+    print("  (应输出: Hello World)")
+    print("")
+    
+    # 测试2: 连续字符串拼接
+    print("测试2: 连续字符串拼接")
+    let s1: string = "A"
+    let s2: string = "B"
+    let s3: string = "C"
+    let result: string = s1 + s2 + s3
+    print("  结果: ${result}")
+    print("  (应输出: ABC)")
+    print("")
+    
+    # 测试3: 字符串拼接直接使用（不赋值）
+    print("测试3: 直接打印拼接结果")
+    let xyz: string = "X" + "Y" + "Z"
+    print("  结果: ${xyz}")
+    print("  (应输出: XYZ)")
+    print("")
+    
+    # 测试4: 字符串重新赋值
+    print("测试4: 字符串重新赋值")
+    let str: string = "First"
+    print("  初始值: ${str}")
+    str = "Second"
+    print("  新值: ${str}")
+    str = "First" + " " + "Modified"
+    print("  拼接后: ${str}")
+    print("  (应输出: First Modified)")
+    print("")
+    
+    print("===== 测试完成 =====")
+    return 0
+}

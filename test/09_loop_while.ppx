@@ -1,0 +1,74 @@
+# while 循环测试
+# 测试 while 循环和嵌套循环
+
+func main(): int {
+    print("===== while 循环测试 =====")
+    print("")
+    
+    # 基本 while 循环
+    print("1. 基本 while 循环 (1 到 5):")
+    let i: int = 1
+    while (i <= 5) {
+        print("  i = ${i}")
+        i = i + 1
+    }
+    print("")
+    
+    # 倒数循环
+    print("2. 倒数循环 (5 到 1):")
+    let j: int = 5
+    while (j > 0) {
+        print("  j = ${j}")
+        j = j - 1
+    }
+    print("")
+    
+    # 求和循环
+    print("3. 求和循环 (1+2+3+4+5):")
+    let sum: int = 0
+    let k: int = 1
+    while (k <= 5) {
+        sum = sum + k
+        k = k + 1
+    }
+    print("  sum = ${sum} (应输出: 15)")
+    print("")
+    
+    # 嵌套 while 循环
+    print("4. 嵌套 while 循环 (九九乘法表片段):")
+    let m: int = 1
+    while (m <= 3) {
+        let n: int = 1
+        while (n <= 3) {
+            let product: int = m * n
+            print("  ${m} * ${n} = ${product}")
+            n = n + 1
+        }
+        m = m + 1
+    }
+    print("")
+    
+    # 步进循环
+    print("5. 步进循环 (偶数 2, 4, 6, 8, 10):")
+    let even: int = 2
+    while (even <= 10) {
+        print("  even = ${even}")
+        even = even + 2
+    }
+    print("")
+    
+    # 阶乘计算
+    print("6. 阶乘计算 (5!):")
+    let fact: int = 1
+    let num: int = 5
+    let counter: int = 1
+    while (counter <= num) {
+        fact = fact * counter
+        counter = counter + 1
+    }
+    print("  5! = ${fact} (应输出: 120)")
+    print("")
+    
+    print("while 循环测试完成！")
+    return 0
+}

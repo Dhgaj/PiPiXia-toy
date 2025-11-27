@@ -1,0 +1,61 @@
+# 字符串和字符操作测试
+# 测试字符串拼接、字符串插值、字符操作
+
+func main(): int {
+    print("===== 字符串和字符测试 =====")
+    print("")
+    
+    # 字符串拼接
+    print("1. 字符串拼接:")
+    let str1: string = "Hello"
+    let str2: string = "World"
+    let str3: string = str1 + " " + str2
+    print("  str1 + \" \" + str2 = ${str3} (应输出: Hello World)")
+    print("")
+    
+    # 字符串插值
+    print("2. 字符串插值:")
+    let name: string = "PiPiXia"
+    let version: int = 1
+    let msg: string = "Welcome to ${name} v${version}!"
+    print("  ${msg}")
+    print("")
+    
+    # 字符操作
+    print("3. 字符操作:")
+    let ch1: char = 'A'
+    let ch2: char = 'B'
+    print("  ch1 = ${ch1} (应输出: A)")
+    print("  ch2 = ${ch2} (应输出: B)")
+    print("")
+    
+    # 转义字符
+    print("4. 转义字符:")
+    let tab_str: string = "Tab:\tHere"
+    let newline_str: string = "Line1\nLine2"
+    print("  ${tab_str}")
+    print("  ${newline_str}")
+    print("")
+    
+    # 字符串和数字混合插值
+    print("5. 混合类型插值:")
+    let num: int = 42
+    let pi: double = 3.14159
+    let mixed: string = "The answer is ${num}, and pi is ${pi}"
+    print("  ${mixed}")
+    print("")
+    
+    # 复杂插值表达式
+    print("6. 插值表达式:")
+    let x: int = 10
+    let y: int = 20
+    let result: string = "x + y = ${x + y}"
+    print("  ${result} (应输出: x + y = 30)")
+    
+    let calc: string = "${x} * ${y} = ${x * y}"
+    print("  ${calc} (应输出: 10 * 20 = 200)")
+    print("")
+    
+    print("字符串测试完成！")
+    return 0
+}

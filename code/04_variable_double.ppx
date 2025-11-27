@@ -1,0 +1,7 @@
+# 浮点数变量测试
+
+func main(): int {
+    let pi: double = 3.14159
+    print(pi)
+    return 0
+}

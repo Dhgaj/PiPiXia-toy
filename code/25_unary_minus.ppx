@@ -1,0 +1,8 @@
+# 负号运算符测试
+
+func main(): int {
+    let a: int = 10
+    let b: int = -a
+    print(b)
+    return 0
+}
