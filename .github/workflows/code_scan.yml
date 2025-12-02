@@ -3,8 +3,30 @@ name: Code Scan
 on:
   push:
     branches: [ main, master, develop ]
+    paths:
+      - '**.cc'
+      - '**.cpp'
+      - '**.h'
+      - '**.hpp'
+      - '**.c'
+      - '**.l'
+      - '**.y'
+      - 'Makefile'
+      - 'CMakeLists.txt'
+      - '.github/workflows/code_scan.yml'
   pull_request:
     branches: [ main, master, develop ]
+    paths:
+      - '**.cc'
+      - '**.cpp'
+      - '**.h'
+      - '**.hpp'
+      - '**.c'
+      - '**.l'
+      - '**.y'
+      - 'Makefile'
+      - 'CMakeLists.txt'
+      - '.github/workflows/code_scan.yml'
   workflow_dispatch: 
 
 jobs:
