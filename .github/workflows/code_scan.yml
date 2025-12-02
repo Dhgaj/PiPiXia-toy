@@ -1,0 +1,145 @@
+name: Code Scan
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch: 
+
+jobs:
+  # CodeQL 安全分析
+  codeql-analysis:
+    name: CodeQL Security Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: cpp
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+        sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+        sudo apt-get update
+        sudo apt-get install -y flex bison llvm-21-dev liblld-21-dev clang-21 make g++
+        sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-21 100
+
+    - name: Detect platform & generate config
+      run: |
+        chmod +x scripts/01_detect_platform.sh
+        ./scripts/01_detect_platform.sh
+
+    - name: Build project
+      run: make
+
+    - name: Perform CodeQL analysis
+      uses: github/codeql-action/analyze@v3
+
+  # 基础静态分析和安全扫描
+  basic-analysis:
+    name: Basic Code Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install tools
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cppcheck
+        # 安装编译依赖
+        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+        sudo add-apt-repository "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+        sudo apt-get update
+        sudo apt-get install -y flex bison llvm-21-dev liblld-21-dev clang-21 make g++
+        sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-21 100
+
+    - name: Detect Platform & Generate Config
+      run: |
+        chmod +x scripts/01_detect_platform.sh
+        ./scripts/01_detect_platform.sh
+
+    - name: Build project
+      run: make
+
+    - name: Run Cppcheck static analysis
+      run: |
+        mkdir -p /tmp/scan-reports
+        cppcheck --enable=warning,style,performance,portability \
+                 --std=c++17 \
+                 --suppress=missingIncludeSystem \
+                 --suppress=unusedFunction \
+                 --xml \
+                 --xml-version=2 \
+                 --output-file=/tmp/scan-reports/cppcheck-report.xml \
+                 --exclude=lexical.cc \
+                 --exclude=syntax.cc \
+                 . || true
+
+    - name: Run Trivy security scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: '/tmp/scan-reports/trivy-results.sarif'
+
+    - name: Upload Trivy results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: '/tmp/scan-reports/trivy-results.sarif'
+
+    - name: Generate analysis summary
+      run: |
+        echo "# 代码分析报告" > /tmp/scan-reports/analysis-summary.md
+        echo "扫描时间: $(date)" >> /tmp/scan-reports/analysis-summary.md
+        echo "提交哈希: ${{ github.sha }}" >> /tmp/scan-reports/analysis-summary.md
+        echo "" >> /tmp/scan-reports/analysis-summary.md
+        
+        echo "## Cppcheck 静态分析" >> /tmp/scan-reports/analysis-summary.md
+        if [ -f /tmp/scan-reports/cppcheck-report.xml ]; then
+          ERROR_COUNT=$(grep -c '<error' /tmp/scan-reports/cppcheck-report.xml || echo "0")
+          echo "- 发现问题数量: $ERROR_COUNT" >> /tmp/scan-reports/analysis-summary.md
+          if [ "$ERROR_COUNT" -gt "0" ]; then
+            echo "- 主要问题类型:" >> /tmp/scan-reports/analysis-summary.md
+            grep 'severity=' /tmp/scan-reports/cppcheck-report.xml | sed 's/.*severity="\([^"]*\)".*/  - \1/' | sort | uniq -c >> /tmp/scan-reports/analysis-summary.md || true
+          fi
+        else
+          echo "- 未生成 Cppcheck 报告" >> /tmp/scan-reports/analysis-summary.md
+        fi
+        echo "" >> /tmp/scan-reports/analysis-summary.md
+        
+        echo "## Trivy 安全扫描" >> /tmp/scan-reports/analysis-summary.md
+        if [ -f /tmp/scan-reports/trivy-results.sarif ]; then
+          echo "- 安全扫描已完成，结果已上传到 GitHub Security" >> /tmp/scan-reports/analysis-summary.md
+        else
+          echo "- Trivy 扫描未完成" >> /tmp/scan-reports/analysis-summary.md
+        fi
+
+    - name: Upload analysis reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: code-analysis-reports
+        path: /tmp/scan-reports/
+        retention-days: 30
+
+    - name: Display analysis summary
+      if: always()
+      run: |
+        if [ -f /tmp/scan-reports/analysis-summary.md ]; then
+          cat /tmp/scan-reports/analysis-summary.md
+        fi
