@@ -10,24 +10,30 @@ jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ github.ref }}
-        release_name: PiPiXia Compiler ${{ github.ref }}
+        tag_name: ${{ github.ref_name }}
+        name: PiPiXia Compiler ${{ github.ref_name }}
         draft: false
         prerelease: false
+        generate_release_notes: true
 
   build-and-upload:
     name: Build and Upload
     needs: create-release
+    permissions:
+      contents: write
     strategy:
       matrix:
         include:
@@ -89,11 +95,7 @@ jobs:
         tar -czf ${{ matrix.asset_name }}.tar.gz ${{ matrix.asset_name }}
 
     - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./release/${{ matrix.asset_name }}.tar.gz
-        asset_name: ${{ matrix.asset_name }}.tar.gz
-        asset_content_type: application/gzip
+        tag_name: ${{ github.ref_name }}
+        files: ./release/${{ matrix.asset_name }}.tar.gz
