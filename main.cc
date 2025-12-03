@@ -429,8 +429,10 @@ int main(int argc, char** argv) {
         bool success = tokenizeFile(inputFile, tokenOutput);
         fclose(file);
         
+        std::cout << "\nLexical analysis completed successfully!" << std::endl;
+        
         if (success) {
-            std::cout << "\n=== Token Analysis Summary ===" << std::endl;
+            std::cout << "\n=== Compilation Summary ===" << std::endl;
             std::cout << "Status: SUCCESS" << std::endl;
             std::cout << "Input:  " << inputFile << std::endl;
             std::cout << "Output: " << tokenOutput << std::endl;
@@ -466,7 +468,9 @@ int main(int argc, char** argv) {
     
     // 如果用户指定了-ast选项，打印AST到控制台
     if (printAST && root) {
-        std::cout << "=== Abstract Syntax Tree ===" << std::endl;
+        std::cout << "\n=== Abstract Syntax Tree ===" << std::endl;
+        std::cout << "Source: " << inputFile << std::endl;
+        std::cout << std::endl;
         root->print(0);
         std::cout << std::endl;
     }
@@ -639,7 +643,7 @@ int main(int argc, char** argv) {
         } else {
             llvmFile = changeExtension(inputFile, ".ll");
         }
-        std::cout << "LLVM IR: " << llvmFile << std::endl;
+        std::cout << "Output: " << llvmFile << " (LLVM IR)" << std::endl;
     } else if (printAST) {
         // -ast 模式
         std::string astFile;
@@ -648,7 +652,7 @@ int main(int argc, char** argv) {
         } else {
             astFile = changeExtension(inputFile, ".ast");
         }
-        std::cout << "AST: " << astFile << std::endl;
+        std::cout << "Output: " << astFile << " (AST)" << std::endl;
     }
     
     if (root) {
