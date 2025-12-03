@@ -21,6 +21,10 @@
 #include "syntax.hh"
 
 extern int yylineno;  /* 当前行号，由 Flex 自动维护 */
+
+// 定义 YY_USER_ACTION 宏，在每个 token 动作前自动更新位置信息
+#define YY_USER_ACTION \
+    yylloc.first_line = yylloc.last_line = yylineno;
 %}
 
 /* Flex 选项配置 */

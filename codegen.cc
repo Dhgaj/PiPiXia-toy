@@ -44,21 +44,30 @@ CodeGenerator::CodeGenerator(const std::string &moduleName) {
 
 CodeGenerator::~CodeGenerator() {}
 
+// ANSI 转义码定义
+static const char* ANSI_RED = "\033[1;31m";     // Error 时粗体红色
+static const char* ANSI_YELLOW = "\033[1;33m";  // Warning 时粗体黄色
+static const char* ANSI_RESET = "\033[0m";      // 重置颜色
+
 // 错误和警告管理
 void CodeGenerator::reportError(const std::string& message, int line) {
     if (line > 0) {
-        std::cerr << "Error at line " << line << ": " << message << std::endl;
+        std::cerr << ANSI_RED << "Error" << ANSI_RESET 
+                  << " at line " << line << ": " << message << std::endl;
     } else {
-        std::cerr << "Error: " << message << std::endl;
+        std::cerr << ANSI_RED << "Error" << ANSI_RESET 
+                  << ": " << message << std::endl;
     }
     errorCount++;
 }
 
 void CodeGenerator::reportWarning(const std::string& message, int line) {
     if (line > 0) {
-        std::cerr << "Warning at line " << line << ": " << message << std::endl;
+        std::cerr << ANSI_YELLOW << "Warning" << ANSI_RESET 
+                  << " at line " << line << ": " << message << std::endl;
     } else {
-        std::cerr << "Warning: " << message << std::endl;
+        std::cerr << ANSI_YELLOW << "Warning" << ANSI_RESET 
+                  << ": " << message << std::endl;
     }
     warningCount++;
 }
@@ -692,11 +701,13 @@ llvm::Value *CodeGenerator::codegenIdentifier(IdentifierNode *node) {
     }
 
     if (node->lineNumber > 0) {
-        std::cerr << "Error at line " << node->lineNumber 
+        std::cerr << ANSI_RED << "Error" << ANSI_RESET 
+                  << " at line " << node->lineNumber 
                   << ": Undefined variable '" << node->name << "'"
                   << std::endl;
     } else {
-        std::cerr << "Error: Undefined variable '" << node->name << "'"
+        std::cerr << ANSI_RED << "Error" << ANSI_RESET 
+                  << ": Undefined variable '" << node->name << "'"
                   << std::endl;
     }
     errorCount++;

@@ -28,6 +28,11 @@
 // 全局日志控制变量，控制是否输出详细的编译过程信息
 bool g_verbose = false;
 
+// ANSI 转义码定义
+static const char* ANSI_RED = "\033[1;31m";     // Error 时粗体红色
+static const char* ANSI_YELLOW = "\033[1;33m";  // Warning 时粗体黄色
+static const char* ANSI_RESET = "\033[0m";      // 重置颜色
+
 // 来自 Flex/Bison 的外部声明
 extern FILE* yyin;                                  // Flex 输入文件指针
 extern int yyparse();                               // Bison 语法分析函数
@@ -131,7 +136,7 @@ bool tokenizeFile(const std::string& inputFile, const std::string& outputFile = 
     if (!outputFile.empty()) {
         outFile.open(outputFile);
         if (!outFile.is_open()) {
-            std::cerr << "Error: Cannot create output file '" << outputFile << "'" << std::endl;
+            std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": Cannot create output file '" << outputFile << "'" << std::endl;
             return false;
         }
     }
@@ -206,7 +211,7 @@ bool tokenizeFile(const std::string& inputFile, const std::string& outputFile = 
         }
         
         if (token == ERROR) {
-            std::cerr << "Error: Lexical analysis stopped due to error" << std::endl;
+            std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": Lexical analysis stopped due to error" << std::endl;
             return false;
         }
     }
@@ -294,20 +299,20 @@ int main(int argc, char** argv) {
             if (i + 1 < argc) {
                 outputFile = argv[++i];
             } else {
-                std::cerr << "Error: -o 选项需要指定输出文件名" << std::endl;
+                std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": -o 选项需要指定输出文件名" << std::endl;
                 return 1;
             }
         } else if (arg[0] != '-') {
             inputFile = arg;
         } else {
-            std::cerr << "Error: 未知选项 '" << arg << "'" << std::endl;
+            std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": 未知选项 '" << arg << "'" << std::endl;
             printUsage(argv[0]);
             return 1;
         }
     }
 
     if (inputFile.empty()) {
-        std::cerr << "Error: 未指定输入文件" << std::endl;
+        std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": 未指定输入文件" << std::endl;
         printUsage(argv[0]);
         return 1;
     }
@@ -341,7 +346,7 @@ int main(int argc, char** argv) {
 
     // 检查输入文件是否有.ppx扩展名
     if (inputFile.length() < 4 || inputFile.substr(inputFile.length() - 4) != ".ppx") {
-        std::cerr << "Warning: 输入文件应使用 .ppx 扩展名" << std::endl;
+        std::cerr << ANSI_YELLOW << "Warning" << ANSI_RESET << ": 输入文件应使用 .ppx 扩展名" << std::endl;
     }
 
     // 文件打开和初始化
@@ -349,7 +354,7 @@ int main(int argc, char** argv) {
     // 打开输入文件
     FILE* file = fopen(inputFile.c_str(), "r");
     if (!file) {
-        std::cerr << "Error: 无法打开文件 '" << inputFile << "'" << std::endl;
+        std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": 无法打开文件 '" << inputFile << "'" << std::endl;
         return 1;
     }
 
@@ -399,7 +404,7 @@ int main(int argc, char** argv) {
         fclose(file);
         file = fopen(inputFile.c_str(), "r");
         if (!file) {
-            std::cerr << "Error: 无法重新打开文件进行语法分析" << std::endl;
+            std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": 无法重新打开文件进行语法分析" << std::endl;
             return 1;
         }
         yyin = file;
@@ -424,7 +429,7 @@ int main(int argc, char** argv) {
             std::cout << "Input:  " << inputFile << std::endl;
             std::cout << "Output: " << tokenOutput << std::endl;
         } else {
-            std::cerr << "Error: Token analysis failed" << std::endl;
+            std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": Token analysis failed" << std::endl;
             return 1;
         }
         
@@ -510,7 +515,7 @@ int main(int argc, char** argv) {
     }
 
     if (!hasMain) {
-        std::cerr << "Warning: 程序中未找到 'main' 函数" << std::endl;
+        std::cerr << ANSI_YELLOW << "Warning" << ANSI_RESET << ": 程序中未找到 'main' 函数" << std::endl;
     }
 
     // LLVM模式检查 
@@ -552,7 +557,7 @@ int main(int argc, char** argv) {
                 if (codegen.compileToExecutable(exeOutput)) {
                     std::cout << "Executable generated: " << exeOutput << std::endl;
                 } else {
-                    std::cerr << "Error: Failed to generate executable" << std::endl;
+                    std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": Failed to generate executable" << std::endl;
                 }
             // 目标文件生成
             } else if (compileToObj) {
@@ -569,7 +574,7 @@ int main(int argc, char** argv) {
                 if (codegen.compileToObjectFile(objOutput)) {
                     std::cout << "Object file generated: " << objOutput << std::endl;
                 } else {
-                    std::cerr << "Error: Failed to generate object file" << std::endl;
+                    std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": Failed to generate object file" << std::endl;
                 }
             // LLVM IR输出（既显示又保存）
             } else {
@@ -590,7 +595,7 @@ int main(int argc, char** argv) {
                 }
             }
         } else {
-            std::cerr << "Error: LLVM IR generation failed" << std::endl;
+            std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": LLVM IR generation failed" << std::endl;
             compilationFailed = true;
         }
     }

@@ -343,6 +343,9 @@ InterpolatedStringNode* parseInterpolatedString(const std::string& raw) {
 }
 %}
 
+// 启用位置跟踪以获取正确的行号
+%locations
+
 // 语义值类型定义
 %union {
     int intVal;
@@ -869,7 +872,7 @@ postfix_expr:
 function_call:
     IDENTIFIER LPAREN argument_list_opt RPAREN {
         auto call = new FunctionCallNode(*$1);
-        call->lineNumber = yylineno;
+        call->lineNumber = @1.first_line;  // 使用位置跟踪获取正确行号
         if ($3) {
             call->arguments = *$3;
             delete $3;
@@ -914,7 +917,7 @@ primary_expr:
     | BOOL_LITERAL          { $$ = new BoolLiteralNode($1); }
     | IDENTIFIER            { 
         $$ = new IdentifierNode(*$1);
-        $$->lineNumber = yylineno;
+        $$->lineNumber = @1.first_line;  // 使用位置跟踪获取正确行号
         delete $1; 
     }
     | LPAREN expression RPAREN {
