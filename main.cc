@@ -41,6 +41,9 @@ extern std::shared_ptr<ProgramNode> root;           // AST 根节点
 extern int yylineno;                                // 当前行号
 extern union YYSTYPE yylval;                        // Token 值
 
+// 来自 syntax.y 的源文件加载函数
+extern void loadSourceFile(const std::string& filename);
+
 // 文件名处理辅助函数：更改文件扩展名
 std::string changeExtension(const std::string& filename, const std::string& newExt) {
     size_t dotPos = filename.find_last_of('.');
@@ -368,6 +371,9 @@ int main(int argc, char** argv) {
     // 为词法分析器设置输入
     yyin = file;
     yylineno = 1;
+    
+    // 加载源文件内容用于错误报告
+    loadSourceFile(inputFile);
 
     // 在verbose模式下，先进行词法分析统计
     if (g_verbose && !printTokens) {
