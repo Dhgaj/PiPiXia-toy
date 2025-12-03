@@ -7,8 +7,10 @@
 #include <llvm/IR/Constants.h>
 #include <memory>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
+#include <regex>
 
 // 外部声明
 extern FILE *yyin;
@@ -48,6 +50,78 @@ CodeGenerator::~CodeGenerator() {}
 static const char* ANSI_RED = "\033[1;31m";     // Error 时粗体红色
 static const char* ANSI_YELLOW = "\033[1;33m";  // Warning 时粗体黄色
 static const char* ANSI_RESET = "\033[0m";      // 重置颜色
+
+// 安全执行外部命令（避免命令注入攻击）使用 fork/exec 代替 system()，不经过 shell 解释
+static int safeExecuteCommand(const std::vector<std::string>& args, bool verbose = false) {
+    if (args.empty()) {
+        return -1;
+    }
+    
+    if (verbose) {
+        std::cout << "[Compile] Running:";
+        for (const auto& arg : args) {
+            std::cout << " " << arg;
+        }
+        std::cout << std::endl;
+    }
+    
+    pid_t pid = fork();
+    
+    if (pid == -1) {
+        // fork 失败
+        std::cerr << "Error: Failed to fork process" << std::endl;
+        return -1;
+    }
+    
+    if (pid == 0) {
+        // 子进程：执行命令
+        // 构建 C 风格的参数数组
+        std::vector<char*> c_args;
+        for (const auto& arg : args) {
+            c_args.push_back(const_cast<char*>(arg.c_str()));
+        }
+        c_args.push_back(nullptr);
+        
+        // 执行命令（不经过 shell）
+        execvp(c_args[0], c_args.data());
+        
+        // 如果 execvp 返回，说明执行失败
+        std::cerr << "Error: Failed to execute " << args[0] << std::endl;
+        _exit(127);
+    }
+    
+    // 父进程：等待子进程完成
+    int status;
+    waitpid(pid, &status, 0);
+    
+    if (WIFEXITED(status)) {
+        return WEXITSTATUS(status);
+    }
+    
+    return -1;
+}
+
+// 验证文件路径是否安全（不包含危险字符）
+static bool isValidFilePath(const std::string& path) {
+    // 检查空路径
+    if (path.empty()) {
+        return false;
+    }
+    
+    // 禁止的字符模式（shell 特殊字符）
+    static const std::regex dangerousPattern(R"([;&|`$(){}'\"\\\n\r])");
+    
+    if (std::regex_search(path, dangerousPattern)) {
+        return false;
+    }
+    
+    // 禁止以 - 开头（可能被解释为命令行选项）
+    if (path[0] == '-') {
+        return false;
+    }
+    
+    return true;
+}
 
 // 错误和警告管理
 void CodeGenerator::reportError(const std::string& message, int line) {
@@ -3987,6 +4061,12 @@ bool CodeGenerator::compileToObjectFile(const std::string &filename) {
 }
 
 bool CodeGenerator::compileToExecutable(const std::string &filename) {
+    // 安全检查：验证文件名不包含危险字符
+    if (!isValidFilePath(filename)) {
+        std::cerr << "Error: Invalid output filename (contains unsafe characters)" << std::endl;
+        return false;
+    }
+    
     // 1. 先生成 LLVM IR 文件
     std::string llFilename = filename + ".ll";
     if (!writeIRToFile(llFilename)) {
@@ -4000,14 +4080,16 @@ bool CodeGenerator::compileToExecutable(const std::string &filename) {
     }
 
     // 2. 使用 clang 编译 LLVM IR 到可执行文件
-    // 添加 -Wno-override-module 抑制 target triple 覆盖警告
-    std::string command = "clang -Wno-override-module " + llFilename + " -o " + filename + " 2>&1";
+    // 使用安全的 fork/exec 方式执行，避免命令注入攻击
+    std::vector<std::string> args = {
+        "clang",
+        "-Wno-override-module",
+        llFilename,
+        "-o",
+        filename
+    };
 
-    if (g_verbose) {
-        std::cout << "[Compile] Running: " << command << std::endl;
-    }
-
-    int result = system(command.c_str());
+    int result = safeExecuteCommand(args, g_verbose);
 
     if (result != 0) {
         std::cerr << "Error: Failed to compile to executable (clang exit code: "
