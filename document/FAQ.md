@@ -312,9 +312,9 @@ try {
 **参考示例**：
 ```bash
 # 查看完整的异常处理示例
-cat code/14_exceptions.ppx
-./compiler code/14_exceptions.ppx
-./code/14_exceptions
+cat code/54_try_catch.ppx
+./compiler code/54_try_catch.ppx
+./code/54_try_catch
 ```
 
 ---
