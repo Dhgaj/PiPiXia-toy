@@ -20,6 +20,7 @@ REPORT_DIR="${PROJECT_ROOT}/report"
 OUTPUT_DIR="${PROJECT_ROOT}/output"
 OUTPUT_EXEC_DIR="${OUTPUT_DIR}/exec"
 OUTPUT_AST_DIR="${OUTPUT_DIR}/ast"
+OUTPUT_AST_VIS_DIR="${OUTPUT_DIR}/ast_visualized"
 OUTPUT_LLVM_DIR="${OUTPUT_DIR}/llvm"
 OUTPUT_TOKEN_DIR="${OUTPUT_DIR}/token"
 REPORT_FILE="${REPORT_DIR}/code_test_report_$(date +%Y%m%d_%H%M%S).md"
@@ -31,7 +32,10 @@ FAIL_FILES=0
 
 # 创建输出目录
 mkdir -p "${REPORT_DIR}"
-mkdir -p "${OUTPUT_EXEC_DIR}" "${OUTPUT_AST_DIR}" "${OUTPUT_LLVM_DIR}" "${OUTPUT_TOKEN_DIR}"
+mkdir -p "${OUTPUT_EXEC_DIR}" "${OUTPUT_AST_DIR}" "${OUTPUT_AST_VIS_DIR}" "${OUTPUT_LLVM_DIR}" "${OUTPUT_TOKEN_DIR}"
+# 列表：收集 AST 可视化结果，最后统一输出
+VISUALIZED_LIST=()
+VISUALIZE_ERRORS=()
 # 检查编译器是否存在
 if [ ! -f "${COMPILER}" ]; then
     echo -e "${RED}错误: 编译器不存在，请先运行 'make' 构建编译器${NC}"
@@ -54,6 +58,28 @@ echo ""
 
 # 查找所有 .ppx 文件（排除 math_lib.ppx 和 hello_world.ppx）
 TEST_FILES=($(find "${CODE_DIR}" -maxdepth 1 -name "*.ppx" -type f ! -name "math_lib.ppx" ! -name "hello_world.ppx" | sort))
+
+# 函数：为需要输入的测试提供预定义输入数据
+get_test_input() {
+    local test_file="$1"
+    case "$test_file" in
+        "00_builtin_input_prompt.ppx")
+            echo -e "Hello"
+            ;;
+        "00_builtin_input.ppx")
+            echo -e "Test"
+            ;;
+        "27_input.ppx")
+            echo -e "测试用户\n25\n北京"
+            ;;
+        "27_input_test.ppx")
+            echo -e "liansifan\n18\nMeizhou"
+            ;;
+        *)
+            echo ""
+            ;;
+    esac
+}
 
 # 遍历测试文件
 for test_file in "${TEST_FILES[@]}"; do
@@ -97,14 +123,31 @@ for test_file in "${TEST_FILES[@]}"; do
         else
             # 运行可执行文件
             echo -e "  ${BLUE}→ 运行中...${NC}"
-            run_output=$("${exec_file}" 2>&1)
-            run_status=$?
+            filename="$(basename "${ppx_file}")"
+            test_input=$(get_test_input "$filename")
+            if [[ -n "$test_input" ]]; then
+                echo -e "  ${YELLOW}→ 使用预定义输入数据${NC}"
+                run_output=$(echo -e "$test_input" | "${exec_file}" 2>&1)
+                run_status=$?
+            else
+                run_output=$("${exec_file}" 2>&1)
+                run_status=$?
+            fi
             
             if [ ${run_status} -eq 0 ]; then
                 echo -e "  ${GREEN}✓ 运行成功${NC}"
                 echo "### 运行结果" >> "${REPORT_FILE}"
                 echo "✅ **运行成功**" >> "${REPORT_FILE}"
                 echo "" >> "${REPORT_FILE}"
+                
+                if [[ -n "$test_input" ]]; then
+                    echo "**预定义输入**:" >> "${REPORT_FILE}"
+                    echo '```' >> "${REPORT_FILE}"
+                    echo -e "$test_input" >> "${REPORT_FILE}"
+                    echo '```' >> "${REPORT_FILE}"
+                    echo "" >> "${REPORT_FILE}"
+                fi
+
                 echo "**输出内容**:" >> "${REPORT_FILE}"
                 echo '```' >> "${REPORT_FILE}"
                 echo "${run_output}" >> "${REPORT_FILE}"
@@ -124,6 +167,15 @@ for test_file in "${TEST_FILES[@]}"; do
                 echo "### 运行结果" >> "${REPORT_FILE}"
                 echo "❌ **运行失败** (退出码: ${run_status})" >> "${REPORT_FILE}"
                 echo "" >> "${REPORT_FILE}"
+
+                if [[ -n "$test_input" ]]; then
+                    echo "**预定义输入**:" >> "${REPORT_FILE}"
+                    echo '```' >> "${REPORT_FILE}"
+                    echo -e "$test_input" >> "${REPORT_FILE}"
+                    echo '```' >> "${REPORT_FILE}"
+                    echo "" >> "${REPORT_FILE}"
+                fi
+
                 echo "**错误信息**:" >> "${REPORT_FILE}"
                 echo '```' >> "${REPORT_FILE}"
                 echo "${run_output}" >> "${REPORT_FILE}"
@@ -140,7 +192,20 @@ for test_file in "${TEST_FILES[@]}"; do
         llvm_file="${OUTPUT_LLVM_DIR}/${basename}.ll"
         "${COMPILER}" "${ppx_file}" -tokens -o "${token_file}" >/dev/null 2>&1
         "${COMPILER}" "${ppx_file}" -ast -o "${ast_file}" >/dev/null 2>&1
-        "${COMPILER}" "${ppx_file}" -emit-llvm -o "${llvm_file}" >/dev/null 2>&1
+        # 生成 AST 可视化图（使用 scripts/ast_visualizer.py）
+        if [ -f "${ast_file}" ]; then
+            vis_out="${OUTPUT_AST_VIS_DIR}/${basename}.png"
+            if python3 "${SCRIPT_DIR}/ast_visualizer.py" "${ast_file}" "${vis_out}" >/dev/null 2>&1; then
+                # 成功则加入列表，稍后统一打印
+                VISUALIZED_LIST+=("${vis_out}")
+                echo "**AST 可视化**: ${vis_out}" >> "${REPORT_FILE}"
+            else
+                # 失败也记录以便后续显示
+                VISUALIZE_ERRORS+=("${basename}")
+                echo "**AST 可视化失败**: ${basename}" >> "${REPORT_FILE}"
+            fi
+        fi
+        "${COMPILER}" "${ppx_file}" -llvm -o "${llvm_file}" >/dev/null 2>&1
         
     else
         echo -e "  ${RED}✗ 编译失败${NC}"
@@ -160,6 +225,23 @@ for test_file in "${TEST_FILES[@]}"; do
     echo "---" >> "${REPORT_FILE}"
     echo "" >> "${REPORT_FILE}"
 done
+
+# 在这里统一输出 AST 可视化的汇总（避免中间穿插）
+if [ ${#VISUALIZED_LIST[@]} -gt 0 ] || [ ${#VISUALIZE_ERRORS[@]} -gt 0 ]; then
+    echo -e "\n${BLUE}=== AST 可视化 列表 ===${NC}"
+    if [ ${#VISUALIZED_LIST[@]} -gt 0 ]; then
+        for v in "${VISUALIZED_LIST[@]}"; do
+            echo -e "  ${GREEN}✓ ${v}${NC}"
+        done
+    fi
+    if [ ${#VISUALIZE_ERRORS[@]} -gt 0 ]; then
+        echo -e "\n${YELLOW}=== AST 可视化 失败 ===${NC}"
+        for b in "${VISUALIZE_ERRORS[@]}"; do
+            echo -e "  ${YELLOW}⚠️ ${b}${NC}"
+        done
+    fi
+    echo ""
+fi
 
 # 生成测试总结
 echo -e "${BLUE}------------${NC}"
@@ -195,6 +277,7 @@ echo -e "输出文件位于:"
 echo -e "  - ${CYAN}${OUTPUT_EXEC_DIR}${NC} (可执行文件)"
 echo -e "  - ${CYAN}${OUTPUT_TOKEN_DIR}${NC} (Token 流)"
 echo -e "  - ${CYAN}${OUTPUT_AST_DIR}${NC} (抽象语法树)"
+echo -e "  - ${CYAN}${OUTPUT_AST_VIS_DIR}${NC} (AST Visualized)"
 echo -e "  - ${CYAN}${OUTPUT_LLVM_DIR}${NC} (LLVM IR)"
 echo ""
 

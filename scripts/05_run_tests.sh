@@ -25,6 +25,7 @@ REPORT_DIR="$PROJECT_ROOT/report"
 # 确保输出目录存在
 mkdir -p "$OUTPUT_DIR/exec"
 mkdir -p "$OUTPUT_DIR/ast"
+mkdir -p "$OUTPUT_DIR/ast_visualized"
 mkdir -p "$OUTPUT_DIR/llvm"
 mkdir -p "$OUTPUT_DIR/token"
 mkdir -p "$REPORT_DIR"
@@ -102,9 +103,13 @@ for test_file in "${TEST_FILES[@]}"; do
     
     # 1. 生成AST输出
     "$PROJECT_ROOT/compiler" "$TEST_DIR/$test_file" -ast -o "$OUTPUT_DIR/ast/test_${test_name}.ast" > /dev/null 2>&1
+    # 生成 AST 可视化图（如果可用）
+    if [ -f "$OUTPUT_DIR/ast/test_${test_name}.ast" ]; then
+        python3 "$SCRIPT_DIR/ast_visualizer.py" "$OUTPUT_DIR/ast/test_${test_name}.ast" "$OUTPUT_DIR/ast_visualized/test_${test_name}.png" > /dev/null 2>&1 || true
+    fi
     
     # 2. 生成LLVM IR输出
-    "$PROJECT_ROOT/compiler" "$TEST_DIR/$test_file" -emit-llvm -o "$OUTPUT_DIR/llvm/test_${test_name}.ll" > /dev/null 2>&1
+    "$PROJECT_ROOT/compiler" "$TEST_DIR/$test_file" -llvm -o "$OUTPUT_DIR/llvm/test_${test_name}.ll" > /dev/null 2>&1
     
     # 3. 生成Token输出
     "$PROJECT_ROOT/compiler" "$TEST_DIR/$test_file" -tokens -o "$OUTPUT_DIR/token/test_${test_name}.tokens" > /dev/null 2>&1
@@ -251,6 +256,7 @@ echo -e "输出文件位于:"
 echo -e "  - ${CYAN}${OUTPUT_DIR}/exec${NC} (可执行文件)"
 echo -e "  - ${CYAN}${OUTPUT_DIR}/token${NC} (Token 流)"
 echo -e "  - ${CYAN}${OUTPUT_DIR}/ast${NC} (抽象语法树)"
+echo -e "  - ${CYAN}${OUTPUT_DIR}/ast_visualized${NC} (AST Visualized)"
 echo -e "  - ${CYAN}${OUTPUT_DIR}/llvm${NC} (LLVM IR)"
 echo ""
 
