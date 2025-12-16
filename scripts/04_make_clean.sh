@@ -77,6 +77,12 @@ case "${CLEAN_TYPE}" in
             rm -f report/*.md
         fi
         
+        # 清理平台配置文件
+        if [ -f ".platform_config" ]; then
+            echo -e "  ${YELLOW}→ 清理平台配置文件${NC}"
+            rm -f .platform_config
+        fi
+
         echo ""
         echo -e "${GREEN}✓ 标准清理完成${NC}"
         ;;
