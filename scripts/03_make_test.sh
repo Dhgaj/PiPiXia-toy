@@ -23,6 +23,8 @@ OUTPUT_AST_DIR="${OUTPUT_DIR}/ast"
 OUTPUT_AST_VIS_DIR="${OUTPUT_DIR}/ast_visualized"
 OUTPUT_LLVM_DIR="${OUTPUT_DIR}/llvm"
 OUTPUT_TOKEN_DIR="${OUTPUT_DIR}/token"
+OUTPUT_SYMBOLS_DIR="${OUTPUT_DIR}/symbols"
+OUTPUT_TAC_DIR="${OUTPUT_DIR}/tac"
 REPORT_FILE="${REPORT_DIR}/code_test_report_$(date +%Y%m%d_%H%M%S).md"
 
 # 统计变量
@@ -32,7 +34,7 @@ FAIL_FILES=0
 
 # 创建输出目录
 mkdir -p "${REPORT_DIR}"
-mkdir -p "${OUTPUT_EXEC_DIR}" "${OUTPUT_AST_DIR}" "${OUTPUT_AST_VIS_DIR}" "${OUTPUT_LLVM_DIR}" "${OUTPUT_TOKEN_DIR}"
+mkdir -p "${OUTPUT_EXEC_DIR}" "${OUTPUT_AST_DIR}" "${OUTPUT_AST_VIS_DIR}" "${OUTPUT_LLVM_DIR}" "${OUTPUT_TOKEN_DIR}" "${OUTPUT_SYMBOLS_DIR}" "${OUTPUT_TAC_DIR}"
 # 列表：收集 AST 可视化结果，最后统一输出
 VISUALIZED_LIST=()
 VISUALIZE_ERRORS=()
@@ -186,12 +188,16 @@ for test_file in "${TEST_FILES[@]}"; do
             fi
         fi
         
-        # 生成 Token 流、AST 和 LLVM IR
+        # 生成 Token 流、AST、符号表、三地址码和 LLVM IR
         token_file="${OUTPUT_TOKEN_DIR}/${basename}.tokens"
         ast_file="${OUTPUT_AST_DIR}/${basename}.ast"
+        symbols_file="${OUTPUT_SYMBOLS_DIR}/${basename}.symbols"
+        tac_file="${OUTPUT_TAC_DIR}/${basename}.tac"
         llvm_file="${OUTPUT_LLVM_DIR}/${basename}.ll"
         "${COMPILER}" "${ppx_file}" -tokens -o "${token_file}" >/dev/null 2>&1
         "${COMPILER}" "${ppx_file}" -ast -o "${ast_file}" >/dev/null 2>&1
+        "${COMPILER}" "${ppx_file}" -symbols -o "${symbols_file}" >/dev/null 2>&1
+        "${COMPILER}" "${ppx_file}" -tac -o "${tac_file}" >/dev/null 2>&1
         # 生成 AST 可视化图（使用 scripts/ast_visualizer.py）
         if [ -f "${ast_file}" ]; then
             vis_out="${OUTPUT_AST_VIS_DIR}/${basename}.png"
@@ -278,6 +284,8 @@ echo -e "  - ${CYAN}${OUTPUT_EXEC_DIR}${NC} (可执行文件)"
 echo -e "  - ${CYAN}${OUTPUT_TOKEN_DIR}${NC} (Token 流)"
 echo -e "  - ${CYAN}${OUTPUT_AST_DIR}${NC} (抽象语法树)"
 echo -e "  - ${CYAN}${OUTPUT_AST_VIS_DIR}${NC} (AST Visualized)"
+echo -e "  - ${CYAN}${OUTPUT_SYMBOLS_DIR}${NC} (符号表)"
+echo -e "  - ${CYAN}${OUTPUT_TAC_DIR}${NC} (三地址码)"
 echo -e "  - ${CYAN}${OUTPUT_LLVM_DIR}${NC} (LLVM IR)"
 echo ""
 

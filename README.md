@@ -22,6 +22,8 @@
 
 - **🔧 词法分析**：基于 Flex 实现高效的词法扫描
 - **📐 语法分析**：使用 Bison 进行语法解析和 AST 构建
+- **📋 符号表**：生成结构化的符号表（变量、函数、参数）
+- **📝 三地址码**：生成 SSA 风格的三地址码中间表示
 - **⚡ 代码生成**：生成优化的 LLVM IR 中间代码
 
 ### 🛠️ 技术栈
@@ -179,6 +181,8 @@
     │   ├── ast/                    # AST 输出目录
     │   ├── exec/                   # 可执行文件输出
     │   ├── llvm/                   # LLVM IR 输出
+    │   ├── symbols/                # 符号表输出
+    │   ├── tac/                    # 三地址码输出
     │   └── token/                  # Token 输出
     │
     ├── static/                     # 静态资源目录
@@ -227,6 +231,10 @@
                      可使用 -tokens -o <目录/文件.tokens> 指定输出路径
       -ast           输出抽象语法树（.ast），不生成可执行文件
                      可使用 -ast -o <目录/文件.ast> 指定输出路径
+      -symbols       输出符号表（.symbols），不生成可执行文件
+                     可使用 -symbols -o <目录/文件.symbols> 指定输出路径
+      -tac           输出三地址码（.tac），不生成可执行文件
+                     可使用 -tac -o <目录/文件.tac> 指定输出路径
       -llvm          输出 LLVM IR 文件（.ll），不生成可执行文件
                      可使用 -llvm -o <目录/文件.ll> 指定输出路径
       -c             输出目标文件（.o），不生成可执行文件
@@ -251,6 +259,24 @@
     
     # 自定义输出位置和文件名
     ./compiler code/01_hello_world.ppx -ast -o output/custom.ast
+    ```
+
+- **符号表生成**
+    ```bash
+    ./compiler code/01_hello_world.ppx -symbols
+    # 生成: code/01_hello_world.symbols
+    
+    # 自定义输出位置和文件名
+    ./compiler code/01_hello_world.ppx -symbols -o output/custom.symbols
+    ```
+
+- **三地址码生成**
+    ```bash
+    ./compiler code/01_hello_world.ppx -tac
+    # 生成: code/01_hello_world.tac
+    
+    # 自定义输出位置和文件名
+    ./compiler code/01_hello_world.ppx -tac -o output/custom.tac
     ```
 
 - **LLVM IR 生成**
@@ -477,6 +503,12 @@ make
 # 查看 AST
 ./compiler code/01_hello_world.ppx -ast
 
+# 查看符号表
+./compiler code/01_hello_world.ppx -symbols
+
+# 查看三地址码
+./compiler code/01_hello_world.ppx -tac
+
 # 查看 LLVM IR
 ./compiler code/01_hello_world.ppx -llvm
 ```
@@ -562,6 +594,8 @@ output/
 ├── ast_visualized/   # 可视化抽象树
 ├── exec/             # 可执行文件
 ├── llvm/             # LLVM IR 文件 (.ll)
+├── symbols/          # 符号表文件 (.symbols)
+├── tac/              # 三地址码文件 (.tac)
 └── token/            # Token 流文件 (.tokens)
 ```
 
@@ -569,6 +603,8 @@ output/
 - `output/ast/test_01_hello_world.ast`
 - `output/exec/test_01_hello_world`
 - `output/llvm/test_01_hello_world.ll`
+- `output/symbols/test_01_hello_world.symbols`
+- `output/tac/test_01_hello_world.tac`
 - `output/token/test_01_hello_world.tokens`
 
 ---
@@ -625,6 +661,8 @@ func main(): int {
 ./compiler program.ppx -v         # 详细模式
 ./compiler program.ppx -tokens    # 查看 Token
 ./compiler program.ppx -ast       # 查看 AST
+./compiler program.ppx -symbols   # 查看符号表
+./compiler program.ppx -tac       # 查看三地址码
 ./compiler program.ppx -llvm      # 查看 LLVM IR
 ```
 

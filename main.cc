@@ -243,6 +243,10 @@ void printUsage(const char* programName) {
     std::cout << "                 可使用 -tokens -o <目录/文件.tokens> 指定输出路径" << std::endl;
     std::cout << "  -ast           输出抽象语法树（.ast），不生成可执行文件" << std::endl;
     std::cout << "                 可使用 -ast -o <目录/文件.ast> 指定输出路径" << std::endl;
+    std::cout << "  -symbols       输出符号表（.symbols），不生成可执行文件" << std::endl;
+    std::cout << "                 可使用 -symbols -o <目录/文件.symbols> 指定输出路径" << std::endl;
+    std::cout << "  -tac           输出三地址码（.tac），不生成可执行文件" << std::endl;
+    std::cout << "                 可使用 -tac -o <目录/文件.tac> 指定输出路径" << std::endl;
     std::cout << "  -llvm          输出 LLVM IR 文件（.ll），不生成可执行文件" << std::endl;
     std::cout << "                 可使用 -llvm -o <目录/文件.ll> 指定输出路径" << std::endl;
     std::cout << "  -c             输出目标文件（.o），不生成可执行文件" << std::endl;
@@ -256,6 +260,10 @@ void printUsage(const char* programName) {
     std::cout << "  " << programName << " code/main.ppx -tokens -o my.tok   # 生成 my.tok 文件" << std::endl;
     std::cout << "  " << programName << " code/main.ppx -ast                # 生成 AST 文件" << std::endl;
     std::cout << "  " << programName << " code/main.ppx -ast -o my.ast      # 生成 my.ast 文件" << std::endl;
+    std::cout << "  " << programName << " code/main.ppx -symbols            # 生成符号表文件" << std::endl;
+    std::cout << "  " << programName << " code/main.ppx -symbols -o my.sym  # 生成 my.sym 文件" << std::endl;
+    std::cout << "  " << programName << " code/main.ppx -tac                # 生成三地址码文件" << std::endl;
+    std::cout << "  " << programName << " code/main.ppx -tac -o my.tac      # 生成 my.tac 文件" << std::endl;
     std::cout << "  " << programName << " code/main.ppx -llvm               # 打印 LLVM IR 到控制台" << std::endl;
     std::cout << "  " << programName << " code/main.ppx -llvm -o my.ll      # 生成 my.ll 文件" << std::endl;
     std::cout << "  " << programName << " code/main.ppx -c                  # 生成目标文件" << std::endl;
@@ -275,6 +283,8 @@ int main(int argc, char** argv) {
     std::string outputFile;             // 输出文件路径
     bool printTokens = false;           // 是否生成Token文件
     bool printAST = false;              // 是否生成AST文件
+    bool printSymbols = false;          // 是否生成符号表
+    bool printTAC = false;              // 是否生成三地址码
     bool generateLLVM = false;          // 是否生成LLVM IR
     bool emitLLVM = false;              // 是否输出LLVM IR到文件
     bool compileToObj = false;          // 是否生成目标文件(.o)
@@ -291,6 +301,10 @@ int main(int argc, char** argv) {
             printTokens = true;
         } else if (arg == "-ast") {
             printAST = true;
+        } else if (arg == "-symbols") {
+            printSymbols = true;
+        } else if (arg == "-tac") {
+            printTAC = true;
         } else if (arg == "-llvm") {
             generateLLVM = true;
             emitLLVM = false; 
@@ -329,12 +343,17 @@ int main(int argc, char** argv) {
         compileToObj = false;
         generateLLVM = false;
         emitLLVM = false;
-    } else if (printAST && !generateLLVM && !emitLLVM && !compileToObj) {
+    } else if (printAST && !printSymbols && !printTAC && !generateLLVM && !emitLLVM && !compileToObj) {
         // AST模式：只打印AST，不生成可执行文件
         compileToExe = false;
         compileToObj = false;
         generateLLVM = false;
         emitLLVM = false;
+    } else if (printSymbols || printTAC) {
+        // 符号表或三地址码模式：需要生成IR但不编译成可执行文件
+        generateLLVM = true;
+        compileToExe = false;
+        compileToObj = false;
     } else if (compileToObj) {
         // 目标文件模式：生成.o文件
         compileToExe = false;
@@ -587,6 +606,38 @@ int main(int argc, char** argv) {
                     std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": Failed to generate object file" << std::endl;
                 }
             // LLVM IR输出（既显示又保存）
+            } else if (printSymbols) {
+                // 符号表输出
+                std::cout << "\n=== Symbol Table Generation ===" << std::endl;
+                codegen.printSymbolTable();
+                
+                // 保存符号表到文件
+                std::string symbolsOutput;
+                if (!outputFile.empty()) {
+                    symbolsOutput = outputFile;
+                } else {
+                    symbolsOutput = changeExtension(inputFile, ".symbols");
+                }
+                
+                if (codegen.writeSymbolTableToFile(symbolsOutput)) {
+                    std::cout << "\nSymbol table written to: " << symbolsOutput << std::endl;
+                }
+            } else if (printTAC) {
+                // 三地址码输出
+                std::cout << "\n=== Three Address Code Generation ===" << std::endl;
+                codegen.printThreeAddressCode();
+                
+                // 保存三地址码到文件
+                std::string tacOutput;
+                if (!outputFile.empty()) {
+                    tacOutput = outputFile;
+                } else {
+                    tacOutput = changeExtension(inputFile, ".tac");
+                }
+                
+                if (codegen.writeThreeAddressCodeToFile(tacOutput)) {
+                    std::cout << "\nThree address code written to: " << tacOutput << std::endl;
+                }
             } else {
                 // 打印到控制台
                 std::cout << "\n=== LLVM IR ===" << std::endl;
@@ -635,6 +686,24 @@ int main(int argc, char** argv) {
             objFile = changeExtension(inputFile, ".o");
         }
         std::cout << "Output: " << objFile << " (object file)" << std::endl;
+    } else if (printSymbols) {
+        // -symbols 模式
+        std::string symbolsFile;
+        if (!outputFile.empty()) {
+            symbolsFile = outputFile;
+        } else {
+            symbolsFile = changeExtension(inputFile, ".symbols");
+        }
+        std::cout << "Output: " << symbolsFile << " (Symbol Table)" << std::endl;
+    } else if (printTAC) {
+        // -tac 模式
+        std::string tacFile;
+        if (!outputFile.empty()) {
+            tacFile = outputFile;
+        } else {
+            tacFile = changeExtension(inputFile, ".tac");
+        }
+        std::cout << "Output: " << tacFile << " (Three Address Code)" << std::endl;
     } else if (generateLLVM && !compileToExe && !compileToObj) {
         // -llvm 模式
         std::string llvmFile;

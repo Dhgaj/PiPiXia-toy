@@ -15,23 +15,26 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# 获取项目根目录
+# 项目根目录
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-TEST_DIR="$PROJECT_ROOT/test"
-OUTPUT_DIR="$PROJECT_ROOT/output"
-REPORT_DIR="$PROJECT_ROOT/report"
+COMPILER="${PROJECT_ROOT}/compiler"
+TEST_DIR="${PROJECT_ROOT}/test"
+OUTPUT_DIR="${PROJECT_ROOT}/output"
+REPORT_DIR="${PROJECT_ROOT}/report"
+OUTPUT_EXEC_DIR="${OUTPUT_DIR}/exec"
+OUTPUT_TOKEN_DIR="${OUTPUT_DIR}/token"
+OUTPUT_SYMBOLS_DIR="${OUTPUT_DIR}/symbols"
+OUTPUT_AST_DIR="${OUTPUT_DIR}/ast"
+OUTPUT_AST_VIS_DIR="${OUTPUT_DIR}/ast_visualized"
+OUTPUT_TAC_DIR="${OUTPUT_DIR}/tac"
+OUTPUT_LLVM_DIR="${OUTPUT_DIR}/llvm"
+REPORT_FILE="${REPORT_DIR}/test_report_$(date +%Y%m%d_%H%M%S).md"
 
 # 确保输出目录存在
-mkdir -p "$OUTPUT_DIR/exec"
-mkdir -p "$OUTPUT_DIR/ast"
-mkdir -p "$OUTPUT_DIR/ast_visualized"
-mkdir -p "$OUTPUT_DIR/llvm"
-mkdir -p "$OUTPUT_DIR/token"
-mkdir -p "$REPORT_DIR"
-
-# 报告文件
-REPORT_FILE="${REPORT_DIR}/test_report_$(date +%Y%m%d_%H%M%S).md"
+mkdir -p "${OUTPUT_EXEC_DIR}" "${OUTPUT_TOKEN_DIR}" "${OUTPUT_SYMBOLS_DIR}" \
+         "${OUTPUT_AST_DIR}" "${OUTPUT_AST_VIS_DIR}" "${OUTPUT_TAC_DIR}" \
+         "${OUTPUT_LLVM_DIR}" "${REPORT_DIR}"
 
 # 统计
 TOTAL=0
@@ -101,21 +104,27 @@ for test_file in "${TEST_FILES[@]}"; do
     # 编译并生成所有输出（文件名以test_开头）
     echo -e "  ${BLUE}→ 编译中...${NC}"
     
-    # 1. 生成AST输出
-    "$PROJECT_ROOT/compiler" "$TEST_DIR/$test_file" -ast -o "$OUTPUT_DIR/ast/test_${test_name}.ast" > /dev/null 2>&1
+    # 1. 生成Token输出
+    "${COMPILER}" "${TEST_DIR}/${test_file}" -tokens -o "${OUTPUT_TOKEN_DIR}/test_${test_name}.tokens" > /dev/null 2>&1
+
+    # 2. 生成符号表
+    "${COMPILER}" "${TEST_DIR}/${test_file}" -symbols -o "${OUTPUT_SYMBOLS_DIR}/test_${test_name}.symbols" > /dev/null 2>&1
+    
+    # 3. 生成AST输出
+    "${COMPILER}" "${TEST_DIR}/${test_file}" -ast -o "${OUTPUT_AST_DIR}/test_${test_name}.ast" > /dev/null 2>&1
     # 生成 AST 可视化图（如果可用）
-    if [ -f "$OUTPUT_DIR/ast/test_${test_name}.ast" ]; then
-        python3 "$SCRIPT_DIR/ast_visualizer.py" "$OUTPUT_DIR/ast/test_${test_name}.ast" "$OUTPUT_DIR/ast_visualized/test_${test_name}.png" > /dev/null 2>&1 || true
+    if [ -f "${OUTPUT_AST_DIR}/test_${test_name}.ast" ]; then
+        python3 "${SCRIPT_DIR}/ast_visualizer.py" "${OUTPUT_AST_DIR}/test_${test_name}.ast" "${OUTPUT_AST_VIS_DIR}/test_${test_name}.png" > /dev/null 2>&1 || true
     fi
+ 
+    # 4. 生成三地址码
+    "${COMPILER}" "${TEST_DIR}/${test_file}" -tac -o "${OUTPUT_TAC_DIR}/test_${test_name}.tac" > /dev/null 2>&1
     
-    # 2. 生成LLVM IR输出
-    "$PROJECT_ROOT/compiler" "$TEST_DIR/$test_file" -llvm -o "$OUTPUT_DIR/llvm/test_${test_name}.ll" > /dev/null 2>&1
+    # 5. 生成LLVM IR输出
+    "${COMPILER}" "${TEST_DIR}/${test_file}" -llvm -o "${OUTPUT_LLVM_DIR}/test_${test_name}.ll" > /dev/null 2>&1
     
-    # 3. 生成Token输出
-    "$PROJECT_ROOT/compiler" "$TEST_DIR/$test_file" -tokens -o "$OUTPUT_DIR/token/test_${test_name}.tokens" > /dev/null 2>&1
-    
-    # 4. 编译生成可执行文件
-    compile_output=$("$PROJECT_ROOT/compiler" "$TEST_DIR/$test_file" -o "$OUTPUT_DIR/exec/test_${test_name}" 2>&1)
+    # 6. 编译生成可执行文件
+    compile_output=$("${COMPILER}" "${TEST_DIR}/${test_file}" -o "${OUTPUT_EXEC_DIR}/test_${test_name}" 2>&1)
     compile_status=$?
     
     if [ ${compile_status} -eq 0 ]; then
@@ -139,10 +148,10 @@ for test_file in "${TEST_FILES[@]}"; do
             test_input=$(get_test_input "$test_file")
             if [[ -n "$test_input" ]]; then
                 echo -e "  ${YELLOW}→ 使用预定义输入数据${NC}"
-                run_output=$(echo -e "$test_input" | "$OUTPUT_DIR/exec/test_${test_name}" 2>&1)
+                run_output=$(echo -e "$test_input" | "${OUTPUT_EXEC_DIR}/test_${test_name}" 2>&1)
                 run_status=$?
             else
-                run_output=$("$OUTPUT_DIR/exec/test_${test_name}" 2>&1)
+                run_output=$("${OUTPUT_EXEC_DIR}/test_${test_name}" 2>&1)
                 run_status=$?
             fi
             
@@ -194,8 +203,8 @@ for test_file in "${TEST_FILES[@]}"; do
         fi
         
         # 显示文件大小
-        if [ -f "$OUTPUT_DIR/exec/test_${test_name}" ]; then
-            file_size=$(ls -lh "$OUTPUT_DIR/exec/test_${test_name}" | awk '{print $5}')
+        if [ -f "${OUTPUT_EXEC_DIR}/test_${test_name}" ]; then
+            file_size=$(ls -lh "${OUTPUT_EXEC_DIR}/test_${test_name}" | awk '{print $5}')
             echo -e "  ${BLUE}→ 可执行文件大小: ${file_size}${NC}"
         fi
         
@@ -253,11 +262,13 @@ fi
 echo ""
 echo -e "详细报告已保存到: ${BLUE}${REPORT_FILE}${NC}"
 echo -e "输出文件位于:"
-echo -e "  - ${CYAN}${OUTPUT_DIR}/exec${NC} (可执行文件)"
-echo -e "  - ${CYAN}${OUTPUT_DIR}/token${NC} (Token 流)"
-echo -e "  - ${CYAN}${OUTPUT_DIR}/ast${NC} (抽象语法树)"
-echo -e "  - ${CYAN}${OUTPUT_DIR}/ast_visualized${NC} (AST Visualized)"
-echo -e "  - ${CYAN}${OUTPUT_DIR}/llvm${NC} (LLVM IR)"
+echo -e "  - ${CYAN}${OUTPUT_EXEC_DIR}${NC} (可执行文件)"
+echo -e "  - ${CYAN}${OUTPUT_TOKEN_DIR}${NC} (Token 流)"
+echo -e "  - ${CYAN}${OUTPUT_SYMBOLS_DIR}${NC} (符号表)"
+echo -e "  - ${CYAN}${OUTPUT_AST_DIR}${NC} (抽象语法树)"
+echo -e "  - ${CYAN}${OUTPUT_AST_VIS_DIR}${NC} (AST Visualized)"
+echo -e "  - ${CYAN}${OUTPUT_TAC_DIR}${NC} (三地址码)"
+echo -e "  - ${CYAN}${OUTPUT_LLVM_DIR}${NC} (LLVM IR)"
 echo ""
 
 if [ $FAILED -eq 0 ]; then

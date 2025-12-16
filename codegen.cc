@@ -4,7 +4,10 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <iomanip>
+#include <sstream>
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/Instructions.h>
 #include <memory>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -4474,5 +4477,703 @@ void CodeGenerator::codegenSwitchStmt(SwitchStmtNode *node) {
     if (g_verbose) {
         std::cout << "[IR Gen]   Switch completed" << std::endl;
     }
+}
+
+// 辅助函数：将LLVM类型转换为可读的类型名
+static std::string llvmTypeToString(llvm::Type* type) {
+    if (type->isIntegerTy(32)) return "int";
+    if (type->isIntegerTy(1)) return "bool";
+    if (type->isIntegerTy(8)) return "char";
+    if (type->isDoubleTy()) return "double";
+    if (type->isFloatTy()) return "float";
+    if (type->isPointerTy()) return "string";
+    if (type->isVoidTy()) return "void";
+    if (type->isArrayTy()) {
+        llvm::ArrayType* arrType = llvm::cast<llvm::ArrayType>(type);
+        return llvmTypeToString(arrType->getElementType()) + "[" + 
+               std::to_string(arrType->getNumElements()) + "]";
+    }
+    
+    std::string typeStr;
+    llvm::raw_string_ostream stream(typeStr);
+    type->print(stream);
+    stream.flush();
+    return typeStr;
+}
+
+// 输出符号表到流
+static void writeSymbolTableToStream(std::ostream& out, 
+    const std::map<std::string, llvm::GlobalVariable*>& globalValues,
+    const std::map<std::string, llvm::Function*>& functions,
+    llvm::Module* module) {
+    
+    out << "╔══════════════════════════════════════════════════════════════════════╗" << std::endl;
+    out << "║                           Symbol Table                               ║" << std::endl;
+    out << "╚══════════════════════════════════════════════════════════════════════╝" << std::endl;
+    out << std::endl;
+    
+    // 输出全局变量
+    if (!globalValues.empty()) {
+        out << "┌─────────────────────────────────────────────────────────────────────┐" << std::endl;
+        out << "│ Global Variables                                                    │" << std::endl;
+        out << "├────────────────────┬───────────────┬───────────┬────────────────────┤" << std::endl;
+        out << "│ Name               │ Type          │ Mutable   │ Initial Value      │" << std::endl;
+        out << "├────────────────────┼───────────────┼───────────┼────────────────────┤" << std::endl;
+        
+        for (const auto& pair : globalValues) {
+            std::string name = pair.first;
+            llvm::GlobalVariable* var = pair.second;
+            
+            std::string typeStr = llvmTypeToString(var->getValueType());
+            std::string mutable_str = var->isConstant() ? "const" : "var";
+            
+            std::string valueStr = "-";
+            if (var->hasInitializer()) {
+                llvm::Constant* init = var->getInitializer();
+                if (auto constInt = llvm::dyn_cast<llvm::ConstantInt>(init)) {
+                    if (init->getType()->isIntegerTy(1)) {
+                        valueStr = constInt->isOne() ? "true" : "false";
+                    } else {
+                        valueStr = std::to_string(constInt->getSExtValue());
+                    }
+                } else if (auto constFP = llvm::dyn_cast<llvm::ConstantFP>(init)) {
+                    std::ostringstream oss;
+                    oss << std::fixed << std::setprecision(2) << constFP->getValueAPF().convertToDouble();
+                    valueStr = oss.str();
+                } else if (llvm::isa<llvm::ConstantAggregateZero>(init)) {
+                    valueStr = "{zero}";
+                } else if (auto constArr = llvm::dyn_cast<llvm::ConstantDataSequential>(init)) {
+                    if (constArr->isString()) {
+                        valueStr = "\"...\"";
+                    } else {
+                        valueStr = "[...]";
+                    }
+                } else {
+                    valueStr = "(complex)";
+                }
+            }
+            
+            // 截断过长的名称
+            if (name.length() > 18) name = name.substr(0, 15) + "...";
+            if (typeStr.length() > 13) typeStr = typeStr.substr(0, 10) + "...";
+            if (valueStr.length() > 18) valueStr = valueStr.substr(0, 15) + "...";
+            
+            out << "│ " << std::left << std::setw(18) << name
+                << " │ " << std::setw(13) << typeStr
+                << " │ " << std::setw(9) << mutable_str
+                << " │ " << std::setw(18) << valueStr << " │" << std::endl;
+        }
+        out << "└────────────────────┴───────────────┴───────────┴────────────────────┘" << std::endl;
+        out << std::endl;
+    }
+    
+    // 输出函数
+    if (!functions.empty()) {
+        out << "┌─────────────────────────────────────────────────────────────────────┐" << std::endl;
+        out << "│ Functions                                                           │" << std::endl;
+        out << "├────────────────────┬───────────────┬────────────────────────────────┤" << std::endl;
+        out << "│ Name               │ Return Type   │ Parameters                     │" << std::endl;
+        out << "├────────────────────┼───────────────┼────────────────────────────────┤" << std::endl;
+        
+        for (const auto& pair : functions) {
+            std::string name = pair.first;
+            llvm::Function* func = pair.second;
+            
+            std::string retTypeStr = llvmTypeToString(func->getReturnType());
+            
+            std::string paramsStr;
+            bool first = true;
+            for (auto& arg : func->args()) {
+                if (!first) paramsStr += ", ";
+                first = false;
+                
+                std::string paramTypeStr = llvmTypeToString(arg.getType());
+                std::string paramName = arg.hasName() ? arg.getName().str() : "";
+                if (!paramName.empty()) {
+                    paramsStr += paramTypeStr + " " + paramName;
+                } else {
+                    paramsStr += paramTypeStr;
+                }
+            }
+            if (paramsStr.empty()) {
+                paramsStr = "void";
+            }
+            
+            // 截断过长的字符串
+            if (name.length() > 18) name = name.substr(0, 15) + "...";
+            if (retTypeStr.length() > 13) retTypeStr = retTypeStr.substr(0, 10) + "...";
+            if (paramsStr.length() > 30) paramsStr = paramsStr.substr(0, 27) + "...";
+            
+            out << "│ " << std::left << std::setw(18) << name
+                << " │ " << std::setw(13) << retTypeStr
+                << " │ " << std::setw(30) << paramsStr << " │" << std::endl;
+        }
+        out << "└────────────────────┴───────────────┴────────────────────────────────┘" << std::endl;
+        out << std::endl;
+        
+        // 输出每个函数的局部变量
+        out << "┌─────────────────────────────────────────────────────────────────────┐" << std::endl;
+        out << "│ Local Variables                                                     │" << std::endl;
+        out << "└─────────────────────────────────────────────────────────────────────┘" << std::endl;
+        
+        for (const auto& pair : functions) {
+            std::string funcName = pair.first;
+            llvm::Function* func = pair.second;
+            
+            if (func->isDeclaration()) continue;
+            
+            // 统计该函数的局部变量
+            int paramCount = func->arg_size();
+            int localCount = 0;
+            for (auto& bb : *func) {
+                for (auto& inst : bb) {
+                    if (llvm::isa<llvm::AllocaInst>(&inst)) {
+                        localCount++;
+                    }
+                }
+            }
+            
+            out << std::endl;
+            out << "  ▶ " << funcName << "()  [params: " << paramCount << ", locals: " << localCount << "]" << std::endl;
+            out << "  ┌──────────────────────┬───────────────┬────────────┐" << std::endl;
+            out << "  │ Name                 │ Type          │ Kind       │" << std::endl;
+            out << "  ├──────────────────────┼───────────────┼────────────┤" << std::endl;
+            
+            // 输出参数
+            for (auto& arg : func->args()) {
+                std::string argName = arg.hasName() ? arg.getName().str() : "(unnamed)";
+                std::string typeStr = llvmTypeToString(arg.getType());
+                if (argName.length() > 20) argName = argName.substr(0, 17) + "...";
+                if (typeStr.length() > 13) typeStr = typeStr.substr(0, 10) + "...";
+                out << "  │ " << std::left << std::setw(20) << argName
+                    << " │ " << std::setw(13) << typeStr
+                    << " │ " << std::setw(10) << "param" << " │" << std::endl;
+            }
+            
+            // 遍历函数中的alloca指令，找出局部变量
+            for (auto& bb : *func) {
+                for (auto& inst : bb) {
+                    if (auto allocaInst = llvm::dyn_cast<llvm::AllocaInst>(&inst)) {
+                        std::string varName = allocaInst->hasName() ? 
+                            allocaInst->getName().str() : "(temp)";
+                        std::string typeStr = llvmTypeToString(allocaInst->getAllocatedType());
+                        if (varName.length() > 20) varName = varName.substr(0, 17) + "...";
+                        if (typeStr.length() > 13) typeStr = typeStr.substr(0, 10) + "...";
+                        out << "  │ " << std::left << std::setw(20) << varName
+                            << " │ " << std::setw(13) << typeStr
+                            << " │ " << std::setw(10) << "local" << " │" << std::endl;
+                    }
+                }
+            }
+            out << "  └──────────────────────┴───────────────┴────────────┘" << std::endl;
+        }
+        out << std::endl;
+    }
+    
+    // 统计信息
+    int totalLocalVars = 0;
+    int totalParams = 0;
+    for (const auto& pair : functions) {
+        llvm::Function* func = pair.second;
+        if (func->isDeclaration()) continue;
+        totalParams += func->arg_size();
+        for (auto& bb : *func) {
+            for (auto& inst : bb) {
+                if (llvm::isa<llvm::AllocaInst>(&inst)) {
+                    totalLocalVars++;
+                }
+            }
+        }
+    }
+    
+    out << "╔══════════════════════════════════════════════════════════════════════╗" << std::endl;
+    out << "║ Summary                                                              ║" << std::endl;
+    out << "╠══════════════════════════════════════════════════════════════════════╣" << std::endl;
+    out << "║   Global Variables : " << std::left << std::setw(48) << globalValues.size() << "║" << std::endl;
+    out << "║   Functions        : " << std::left << std::setw(48) << functions.size() << "║" << std::endl;
+    out << "║   Parameters       : " << std::left << std::setw(48) << totalParams << "║" << std::endl;
+    out << "║   Local Variables  : " << std::left << std::setw(48) << totalLocalVars << "║" << std::endl;
+    out << "╚══════════════════════════════════════════════════════════════════════╝" << std::endl;
+}
+
+// 打印符号表到控制台
+void CodeGenerator::printSymbolTable() {
+    writeSymbolTableToStream(std::cout, globalValues, functions, module.get());
+}
+
+// 将符号表写入文件
+bool CodeGenerator::writeSymbolTableToFile(const std::string& filename) {
+    std::ofstream outFile(filename);
+    if (!outFile.is_open()) {
+        std::cerr << "Error: Cannot create symbol table file '" << filename << "'" << std::endl;
+        return false;
+    }
+    
+    writeSymbolTableToStream(outFile, globalValues, functions, module.get());
+    
+    outFile.close();
+    return true;
+}
+
+// 三地址码输出实现 - SSA风格
+
+// 辅助函数：转义字符串中的特殊字符
+static std::string escapeString(const std::string& str) {
+    std::string result;
+    for (char c : str) {
+        switch (c) {
+            case '\n': result += "\\n"; break;
+            case '\t': result += "\\t"; break;
+            case '\r': result += "\\r"; break;
+            case '\0': break; // 跳过空字符
+            case '"': result += "\\\""; break;
+            case '\\': result += "\\\\"; break;
+            default: result += c; break;
+        }
+    }
+    return result;
+}
+
+// 辅助函数：获取操作数的可读名称（SSA风格）
+static std::string getOperandName(llvm::Value* val, std::map<llvm::Value*, std::string>& tempNames, int& tempCounter) {
+    if (!val) return "?";
+    
+    // 常量整数
+    if (auto constInt = llvm::dyn_cast<llvm::ConstantInt>(val)) {
+        if (constInt->getType()->isIntegerTy(1)) {
+            return constInt->isOne() ? "true" : "false";
+        }
+        return std::to_string(constInt->getSExtValue());
+    }
+    
+    // 常量浮点数
+    if (auto constFP = llvm::dyn_cast<llvm::ConstantFP>(val)) {
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(2) << constFP->getValueAPF().convertToDouble();
+        return oss.str();
+    }
+    
+    // 全局字符串常量
+    if (auto gv = llvm::dyn_cast<llvm::GlobalVariable>(val)) {
+        if (gv->hasInitializer()) {
+            if (auto constData = llvm::dyn_cast<llvm::ConstantDataSequential>(gv->getInitializer())) {
+                if (constData->isString()) {
+                    std::string str = constData->getAsString().str();
+                    // 移除末尾的空字符
+                    while (!str.empty() && str.back() == '\0') {
+                        str.pop_back();
+                    }
+                    // 转义特殊字符
+                    str = escapeString(str);
+                    // 截断过长的字符串
+                    if (str.length() > 25) {
+                        str = str.substr(0, 22) + "...";
+                    }
+                    return "\"" + str + "\"";
+                }
+            }
+        }
+        return "@" + gv->getName().str();
+    }
+    
+    // 函数
+    if (auto func = llvm::dyn_cast<llvm::Function>(val)) {
+        return func->getName().str();
+    }
+    
+    // 基本块
+    if (auto bb = llvm::dyn_cast<llvm::BasicBlock>(val)) {
+        return bb->getName().str();
+    }
+    
+    // 有名称的值
+    if (val->hasName()) {
+        return val->getName().str();
+    }
+    
+    // 临时值 - 分配一个名称
+    auto it = tempNames.find(val);
+    if (it != tempNames.end()) {
+        return it->second;
+    }
+    
+    std::string name = "t" + std::to_string(tempCounter++);
+    tempNames[val] = name;
+    return name;
+}
+
+// 辅助函数：将指令转换为SSA风格TAC
+static std::string instructionToTAC(llvm::Instruction& inst, 
+    std::map<llvm::Value*, std::string>& tempNames, int& tempCounter) {
+    
+    std::string result;
+    std::string destName = getOperandName(&inst, tempNames, tempCounter);
+    
+    // 根据指令类型生成不同的TAC
+    unsigned opcode = inst.getOpcode();
+    
+    switch (opcode) {
+        // 内存分配
+        case llvm::Instruction::Alloca: {
+            auto* alloca = llvm::cast<llvm::AllocaInst>(&inst);
+            std::string typeStr = llvmTypeToString(alloca->getAllocatedType());
+            result = destName + " : " + typeStr;
+            break;
+        }
+        
+        // 加载
+        case llvm::Instruction::Load: {
+            std::string src = getOperandName(inst.getOperand(0), tempNames, tempCounter);
+            result = destName + " = " + src;
+            break;
+        }
+        
+        // 存储 - 赋值
+        case llvm::Instruction::Store: {
+            std::string val = getOperandName(inst.getOperand(0), tempNames, tempCounter);
+            std::string dest = getOperandName(inst.getOperand(1), tempNames, tempCounter);
+            result = dest + " = " + val;
+            break;
+        }
+        
+        // 二元算术运算
+        case llvm::Instruction::Add:
+        case llvm::Instruction::FAdd: {
+            std::string op1 = getOperandName(inst.getOperand(0), tempNames, tempCounter);
+            std::string op2 = getOperandName(inst.getOperand(1), tempNames, tempCounter);
+            result = destName + " = " + op1 + " + " + op2;
+            break;
+        }
+        case llvm::Instruction::Sub:
+        case llvm::Instruction::FSub: {
+            std::string op1 = getOperandName(inst.getOperand(0), tempNames, tempCounter);
+            std::string op2 = getOperandName(inst.getOperand(1), tempNames, tempCounter);
+            result = destName + " = " + op1 + " - " + op2;
+            break;
+        }
+        case llvm::Instruction::Mul:
+        case llvm::Instruction::FMul: {
+            std::string op1 = getOperandName(inst.getOperand(0), tempNames, tempCounter);
+            std::string op2 = getOperandName(inst.getOperand(1), tempNames, tempCounter);
+            result = destName + " = " + op1 + " * " + op2;
+            break;
+        }
+        case llvm::Instruction::SDiv:
+        case llvm::Instruction::UDiv:
+        case llvm::Instruction::FDiv: {
+            std::string op1 = getOperandName(inst.getOperand(0), tempNames, tempCounter);
+            std::string op2 = getOperandName(inst.getOperand(1), tempNames, tempCounter);
+            result = destName + " = " + op1 + " / " + op2;
+            break;
+        }
+        case llvm::Instruction::SRem:
+        case llvm::Instruction::URem:
+        case llvm::Instruction::FRem: {
+            std::string op1 = getOperandName(inst.getOperand(0), tempNames, tempCounter);
+            std::string op2 = getOperandName(inst.getOperand(1), tempNames, tempCounter);
+            result = destName + " = " + op1 + " % " + op2;
+            break;
+        }
+        
+        // 比较运算
+        case llvm::Instruction::ICmp: {
+            auto* cmp = llvm::cast<llvm::ICmpInst>(&inst);
+            std::string op1 = getOperandName(inst.getOperand(0), tempNames, tempCounter);
+            std::string op2 = getOperandName(inst.getOperand(1), tempNames, tempCounter);
+            std::string cmpOp;
+            switch (cmp->getPredicate()) {
+                case llvm::ICmpInst::ICMP_EQ: cmpOp = "=="; break;
+                case llvm::ICmpInst::ICMP_NE: cmpOp = "!="; break;
+                case llvm::ICmpInst::ICMP_SLT:
+                case llvm::ICmpInst::ICMP_ULT: cmpOp = "<"; break;
+                case llvm::ICmpInst::ICMP_SLE:
+                case llvm::ICmpInst::ICMP_ULE: cmpOp = "<="; break;
+                case llvm::ICmpInst::ICMP_SGT:
+                case llvm::ICmpInst::ICMP_UGT: cmpOp = ">"; break;
+                case llvm::ICmpInst::ICMP_SGE:
+                case llvm::ICmpInst::ICMP_UGE: cmpOp = ">="; break;
+                default: cmpOp = "?"; break;
+            }
+            result = destName + " = " + op1 + " " + cmpOp + " " + op2;
+            break;
+        }
+        case llvm::Instruction::FCmp: {
+            auto* cmp = llvm::cast<llvm::FCmpInst>(&inst);
+            std::string op1 = getOperandName(inst.getOperand(0), tempNames, tempCounter);
+            std::string op2 = getOperandName(inst.getOperand(1), tempNames, tempCounter);
+            std::string cmpOp;
+            switch (cmp->getPredicate()) {
+                case llvm::FCmpInst::FCMP_OEQ:
+                case llvm::FCmpInst::FCMP_UEQ: cmpOp = "=="; break;
+                case llvm::FCmpInst::FCMP_ONE:
+                case llvm::FCmpInst::FCMP_UNE: cmpOp = "!="; break;
+                case llvm::FCmpInst::FCMP_OLT:
+                case llvm::FCmpInst::FCMP_ULT: cmpOp = "<"; break;
+                case llvm::FCmpInst::FCMP_OLE:
+                case llvm::FCmpInst::FCMP_ULE: cmpOp = "<="; break;
+                case llvm::FCmpInst::FCMP_OGT:
+                case llvm::FCmpInst::FCMP_UGT: cmpOp = ">"; break;
+                case llvm::FCmpInst::FCMP_OGE:
+                case llvm::FCmpInst::FCMP_UGE: cmpOp = ">="; break;
+                default: cmpOp = "?"; break;
+            }
+            result = destName + " = " + op1 + " " + cmpOp + " " + op2;
+            break;
+        }
+        
+        // 逻辑运算
+        case llvm::Instruction::And: {
+            std::string op1 = getOperandName(inst.getOperand(0), tempNames, tempCounter);
+            std::string op2 = getOperandName(inst.getOperand(1), tempNames, tempCounter);
+            result = destName + " = " + op1 + " && " + op2;
+            break;
+        }
+        case llvm::Instruction::Or: {
+            std::string op1 = getOperandName(inst.getOperand(0), tempNames, tempCounter);
+            std::string op2 = getOperandName(inst.getOperand(1), tempNames, tempCounter);
+            result = destName + " = " + op1 + " || " + op2;
+            break;
+        }
+        case llvm::Instruction::Xor: {
+            std::string op1 = getOperandName(inst.getOperand(0), tempNames, tempCounter);
+            std::string op2 = getOperandName(inst.getOperand(1), tempNames, tempCounter);
+            // 检查是否为NOT操作 (xor x, -1)
+            if (auto constInt = llvm::dyn_cast<llvm::ConstantInt>(inst.getOperand(1))) {
+                if (constInt->isAllOnesValue()) {
+                    result = destName + " = !" + op1;
+                    break;
+                }
+            }
+            result = destName + " = " + op1 + " ^ " + op2;
+            break;
+        }
+        
+        // 类型转换
+        case llvm::Instruction::ZExt:
+        case llvm::Instruction::SExt:
+        case llvm::Instruction::Trunc:
+        case llvm::Instruction::FPToSI:
+        case llvm::Instruction::FPToUI:
+        case llvm::Instruction::SIToFP:
+        case llvm::Instruction::UIToFP:
+        case llvm::Instruction::BitCast:
+        case llvm::Instruction::PtrToInt:
+        case llvm::Instruction::IntToPtr: {
+            std::string src = getOperandName(inst.getOperand(0), tempNames, tempCounter);
+            std::string typeStr = llvmTypeToString(inst.getType());
+            result = destName + " = (" + typeStr + ")" + src;
+            break;
+        }
+        
+        // 分支
+        case llvm::Instruction::Br: {
+            auto* br = llvm::cast<llvm::BranchInst>(&inst);
+            if (br->isConditional()) {
+                std::string cond = getOperandName(br->getCondition(), tempNames, tempCounter);
+                std::string trueBB = br->getSuccessor(0)->getName().str();
+                std::string falseBB = br->getSuccessor(1)->getName().str();
+                result = "if " + cond + " goto " + trueBB + " else goto " + falseBB;
+            } else {
+                std::string target = br->getSuccessor(0)->getName().str();
+                result = "goto " + target;
+            }
+            break;
+        }
+        
+        // 返回
+        case llvm::Instruction::Ret: {
+            auto* ret = llvm::cast<llvm::ReturnInst>(&inst);
+            if (ret->getNumOperands() > 0) {
+                std::string val = getOperandName(ret->getReturnValue(), tempNames, tempCounter);
+                result = "return " + val;
+            } else {
+                result = "return";
+            }
+            break;
+        }
+        
+        // 函数调用
+        case llvm::Instruction::Call: {
+            auto* call = llvm::cast<llvm::CallInst>(&inst);
+            llvm::Function* callee = call->getCalledFunction();
+            std::string funcName = callee ? callee->getName().str() : "(indirect)";
+            
+            std::string args;
+            for (unsigned i = 0; i < call->arg_size(); i++) {
+                if (i > 0) args += ", ";
+                args += getOperandName(call->getArgOperand(i), tempNames, tempCounter);
+            }
+            
+            if (call->getType()->isVoidTy()) {
+                result = "call " + funcName + "(" + args + ")";
+            } else {
+                result = destName + " = call " + funcName + "(" + args + ")";
+            }
+            break;
+        }
+        
+        // 数组/指针访问
+        case llvm::Instruction::GetElementPtr: {
+            auto* gep = llvm::cast<llvm::GetElementPtrInst>(&inst);
+            std::string base = getOperandName(gep->getPointerOperand(), tempNames, tempCounter);
+            std::string indices;
+            for (auto it = gep->idx_begin(); it != gep->idx_end(); ++it) {
+                indices += "[" + getOperandName(*it, tempNames, tempCounter) + "]";
+            }
+            result = destName + " = &" + base + indices;
+            break;
+        }
+        
+        // PHI节点
+        case llvm::Instruction::PHI: {
+            auto* phi = llvm::cast<llvm::PHINode>(&inst);
+            result = destName + " = phi(";
+            for (unsigned i = 0; i < phi->getNumIncomingValues(); i++) {
+                if (i > 0) result += ", ";
+                std::string val = getOperandName(phi->getIncomingValue(i), tempNames, tempCounter);
+                std::string bb = phi->getIncomingBlock(i)->getName().str();
+                result += val + " from " + bb;
+            }
+            result += ")";
+            break;
+        }
+        
+        // Select（三元运算符）
+        case llvm::Instruction::Select: {
+            auto* sel = llvm::cast<llvm::SelectInst>(&inst);
+            std::string cond = getOperandName(sel->getCondition(), tempNames, tempCounter);
+            std::string trueVal = getOperandName(sel->getTrueValue(), tempNames, tempCounter);
+            std::string falseVal = getOperandName(sel->getFalseValue(), tempNames, tempCounter);
+            result = destName + " = " + cond + " ? " + trueVal + " : " + falseVal;
+            break;
+        }
+        
+        // 默认情况
+        default: {
+            result = "; " + std::string(inst.getOpcodeName());
+            for (unsigned i = 0; i < inst.getNumOperands(); i++) {
+                result += " " + getOperandName(inst.getOperand(i), tempNames, tempCounter);
+            }
+            break;
+        }
+    }
+    
+    return result;
+}
+
+// 辅助函数：检查TAC是否为冗余赋值（如 x = x 或者纯load）
+static bool isRedundantTAC(const std::string& tac, llvm::Instruction& inst) {
+    // 检查是否为形如 "x = x" 的冗余赋值
+    size_t eqPos = tac.find(" = ");
+    if (eqPos != std::string::npos) {
+        std::string lhs = tac.substr(0, eqPos);
+        std::string rhs = tac.substr(eqPos + 3);
+        // 如果左右两边相同（只是变量赋值给自己），跳过
+        if (lhs == rhs) {
+            return true;
+        }
+        // 对于load指令，如果只是从alloca加载到同名变量，可能冗余
+        if (inst.getOpcode() == llvm::Instruction::Load) {
+            // 移除临时变量的数字后缀再比较
+            std::string lhsBase = lhs, rhsBase = rhs;
+            while (!lhsBase.empty() && std::isdigit(lhsBase.back())) {
+                lhsBase.pop_back();
+            }
+            while (!rhsBase.empty() && std::isdigit(rhsBase.back())) {
+                rhsBase.pop_back();
+            }
+            // 如果基本名相同，认为是冗余load
+            if (!lhsBase.empty() && lhsBase == rhsBase) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// 辅助函数：输出TAC到流
+static void writeTACToStream(std::ostream& out, llvm::Module* module) {
+    out << "=== Three Address Code (SSA) ===" << std::endl;
+    out << std::endl;
+    
+    int totalFunctions = 0;
+    int totalInstructions = 0;
+    
+    // 遍历所有函数
+    for (auto& func : module->functions()) {
+        if (func.isDeclaration()) continue; // 跳过外部声明
+        totalFunctions++;
+        
+        // 函数签名
+        out << "Function " << func.getName().str() << "(";
+        bool first = true;
+        for (auto& arg : func.args()) {
+            if (!first) out << ", ";
+            first = false;
+            out << llvmTypeToString(arg.getType());
+            if (arg.hasName()) {
+                out << " " << arg.getName().str();
+            }
+        }
+        out << ") -> " << llvmTypeToString(func.getReturnType()) << std::endl;
+        out << std::string(60, '-') << std::endl;
+        
+        // 为每个函数初始化临时变量计数器
+        std::map<llvm::Value*, std::string> tempNames;
+        int tempCounter = 0;
+        int instructionCount = 0;
+        
+        // 预处理：为函数参数分配名称
+        for (auto& arg : func.args()) {
+            if (arg.hasName()) {
+                tempNames[&arg] = arg.getName().str();
+            }
+        }
+        
+        // 遍历所有基本块
+        for (auto& bb : func) {
+            out << bb.getName().str() << ":" << std::endl;
+            
+            // 遍历基本块中的所有指令
+            for (auto& inst : bb) {
+                std::string tac = instructionToTAC(inst, tempNames, tempCounter);
+                
+                // 过滤冗余指令
+                if (!isRedundantTAC(tac, inst)) {
+                    out << "    " << tac << std::endl;
+                    instructionCount++;
+                }
+            }
+            out << std::endl;
+        }
+        
+        out << "Instructions: " << instructionCount << std::endl;
+        out << std::endl;
+        totalInstructions += instructionCount;
+    }
+    
+    // 输出总结
+    out << std::string(60, '=') << std::endl;
+    out << "Summary: " << totalFunctions << " function(s), " 
+        << totalInstructions << " instruction(s)" << std::endl;
+}
+
+// 打印三地址码到控制台
+void CodeGenerator::printThreeAddressCode() {
+    writeTACToStream(std::cout, module.get());
+}
+
+// 将三地址码写入文件
+bool CodeGenerator::writeThreeAddressCodeToFile(const std::string& filename) {
+    std::ofstream outFile(filename);
+    if (!outFile.is_open()) {
+        std::cerr << "Error: Cannot create three address code file '" << filename << "'" << std::endl;
+        return false;
+    }
+    
+    writeTACToStream(outFile, module.get());
+    
+    outFile.close();
+    return true;
 }
 

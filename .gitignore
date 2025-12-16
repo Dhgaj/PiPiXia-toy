@@ -69,6 +69,10 @@ output/exec/*
 !output/exec/.gitkeep
 output/llvm/*
 !output/llvm/.gitkeep
+output/symbols/*
+!output/symbols/.gitkeep
+output/tac/*
+!output/tac/.gitkeep
 output/token/*
 !output/token/.gitkeep
 

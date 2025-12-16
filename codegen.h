@@ -190,6 +190,12 @@ public:
     bool compileToObjectFile(const std::string& filename);          // 编译为目标文件 (.o)
     bool compileToExecutable(const std::string& filename);          // 编译为可执行文件
     
+    // 符号表和三地址码
+    void printSymbolTable();                                        // 打印符号表到控制台
+    bool writeSymbolTableToFile(const std::string& filename);       // 将符号表写入文件
+    void printThreeAddressCode();                                   // 打印三地址码到控制台
+    bool writeThreeAddressCodeToFile(const std::string& filename);  // 将三地址码写入文件
+    
     // 访问器
     llvm::Module* getModule() { return module.get(); }              // 获取生成的 LLVM 模块
 };

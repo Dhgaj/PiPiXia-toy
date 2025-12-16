@@ -278,6 +278,20 @@ print(x)  # ❌ 未初始化！
 ./scripts/06_visualize_ast.sh
 ```
 
+**查看符号表**：
+```bash
+./compiler program.ppx -symbols
+# 生成: program.symbols
+# 显示全局变量、函数、参数、局部变量
+```
+
+**查看三地址码**：
+```bash
+./compiler program.ppx -tac
+# 生成: program.tac
+# 显示 SSA 风格的中间代码
+```
+
 **查看 LLVM IR**：
 ```bash
 ./compiler program.ppx -llvm
@@ -443,13 +457,25 @@ func calculate(x: int): int {
 }
 ```
 
-**2. 查看 LLVM IR**：
+**2. 查看符号表**：
+```bash
+./compiler program.ppx -symbols
+# 查看所有变量、函数定义
+```
+
+**3. 查看三地址码**：
+```bash
+./compiler program.ppx -tac
+# 查看中间代码表示
+```
+
+**4. 查看 LLVM IR**：
 ```bash
 ./compiler program.ppx -llvm
 cat program.ll  # 查看生成的中间代码
 ```
 
-**3. 使用 verbose 模式**：
+**5. 使用 verbose 模式**：
 ```bash
 ./compiler program.ppx -v
 # 查看完整的编译过程：
