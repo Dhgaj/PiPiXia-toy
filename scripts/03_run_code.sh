@@ -77,8 +77,10 @@ for ppx_file in "${TEST_FILES[@]}"; do
     source_code=$(cat "${ppx_file}")
     
     # 编译
-    compile_output=$("${COMPILER}" "${ppx_file}" -o "${exec_file}" 2>&1)
+    raw_output=$("${COMPILER}" "${ppx_file}" -o "${exec_file}" 2>&1)
     compile_status=$?
+    # 过滤ANSI颜色代码
+    compile_output=$(echo "$raw_output" | sed 's/\x1b\[[0-9;]*m//g')
     
     # 开始生成报告
     {

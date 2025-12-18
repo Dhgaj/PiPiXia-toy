@@ -87,8 +87,10 @@ for ppx_file in "${ppx_files[@]}"; do
     source_code=$(cat "${ppx_file}")
     
     # 生成AST
-    ast_output=$("${COMPILER}" "${ppx_file}" -ast -o "${ast_file}" 2>&1)
+    raw_output=$("${COMPILER}" "${ppx_file}" -ast -o "${ast_file}" 2>&1)
     ast_status=$?
+    # 过滤ANSI颜色代码
+    ast_output=$(echo "$raw_output" | sed 's/\x1b\[[0-9;]*m//g')
     
     # 读取AST内容
     if [ -f "${ast_file}" ]; then

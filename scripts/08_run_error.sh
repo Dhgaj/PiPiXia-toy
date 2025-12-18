@@ -64,8 +64,10 @@ for ppx_file in "$ERROR_DIR"/*.ppx; do
     source_code=$(cat "$ppx_file")
     
     # 运行编译器并捕获输出
-    compiler_output=$("$COMPILER" "$ppx_file" 2>&1)
+    raw_output=$("$COMPILER" "$ppx_file" 2>&1)
     exit_code=$?
+    # 过滤ANSI颜色代码
+    compiler_output=$(echo "$raw_output" | sed 's/\x1b\[[0-9;]*m//g')
     
     # 生成Markdown报告
     {
