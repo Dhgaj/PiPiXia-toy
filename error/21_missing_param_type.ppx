@@ -1,0 +1,11 @@
+# 缺少参数类型错误
+# 测试函数参数缺少类型声明
+
+func add(a, b): int {
+    return a + b
+}
+
+func main(): int {
+    print(add(1, 2))
+    return 0
+}

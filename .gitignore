@@ -78,7 +78,17 @@ output/token/*
 
 # 忽略输出和报告文件，但保留目录结构
 !report/.gitkeep
-report/**.md
+report/*.md
+
+# report 子目录
+report/code/*
+!report/code/.gitkeep
+report/test/*
+!report/test/.gitkeep
+report/ast/*
+!report/ast/.gitkeep
+report/error/*
+!report/error/.gitkeep
 
 # 测试文件 - 只忽略编译产物，保留源代码
 test/*
@@ -123,6 +133,10 @@ __pycache__/
 
 # 检查目录
 check/
+
+# 错误测试目录 - 保留ppx源文件
+error/*
+!error/*.ppx
 
 # 临时文档
 markdown/

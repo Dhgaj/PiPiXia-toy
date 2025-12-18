@@ -1,0 +1,8 @@
+# 无效字符字面量错误
+# 测试字符字面量包含多个字符
+
+func main(): int {
+    let c: char = 'abc'
+    print(c)
+    return 0
+}

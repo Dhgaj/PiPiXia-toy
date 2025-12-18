@@ -1,0 +1,8 @@
+# 数组大小不匹配错误
+# 测试数组声明大小与实际元素数量不匹配
+
+func main(): int {
+    let arr: int[3] = [1, 2, 3, 4, 5]
+    print(arr[0])
+    return 0
+}

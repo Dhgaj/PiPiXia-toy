@@ -1,0 +1,7 @@
+# 缺少右括号错误
+# 测试函数调用时缺少右括号 )
+
+func main(): int {
+    print("Hello World!"
+    return 0
+}

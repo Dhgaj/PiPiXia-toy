@@ -1,0 +1,8 @@
+# 字符串插值语法错误
+# 测试字符串插值缺少右花括号
+
+func main(): int {
+    let name: string = "Alice"
+    print("Hello ${name!")
+    return 0
+}

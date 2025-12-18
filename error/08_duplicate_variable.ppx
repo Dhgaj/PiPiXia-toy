@@ -1,0 +1,9 @@
+# 重复定义变量错误
+# 测试在同一作用域内重复声明变量
+
+func main(): int {
+    let x: int = 10
+    let x: int = 20
+    print(x)
+    return 0
+}

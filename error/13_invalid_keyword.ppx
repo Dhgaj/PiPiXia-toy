@@ -1,0 +1,8 @@
+# 无效关键字错误
+# 测试使用不存在的关键字
+
+func main(): int {
+    var x: int = 10
+    print(x)
+    return 0
+}

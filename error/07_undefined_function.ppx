@@ -1,0 +1,8 @@
+# 未定义函数错误
+# 测试调用未声明的函数
+
+func main(): int {
+    let result: int = unknownFunction(10, 20)
+    print(result)
+    return 0
+}

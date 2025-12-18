@@ -1,0 +1,8 @@
+# 缺少冒号错误
+# 测试变量声明时缺少类型冒号
+
+func main(): int {
+    let x int = 10
+    print(x)
+    return 0
+}

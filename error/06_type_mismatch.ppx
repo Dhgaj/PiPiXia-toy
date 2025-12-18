@@ -1,0 +1,8 @@
+# 类型不匹配错误
+# 测试将字符串赋值给整数类型变量
+
+func main(): int {
+    let x: int = "hello"
+    print(x)
+    return 0
+}

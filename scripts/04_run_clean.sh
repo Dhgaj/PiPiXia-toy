@@ -71,10 +71,31 @@ case "${CLEAN_TYPE}" in
             rm -f output/exec/*
         fi
         
-        # 清理测试报告
-        if [ -d "report" ] && [ "$(ls -A report 2>/dev/null)" ]; then
-            echo -e "  ${YELLOW}→ 清理测试报告${NC}"
-            rm -f report/*.md
+        # 清理测试报告（各子目录）
+        if [ -d "report/code" ] && [ "$(ls -A report/code 2>/dev/null)" ]; then
+            echo -e "  ${YELLOW}→ 清理 code 测试报告${NC}"
+            find report/code -name "*.md" -type f -exec trash {} \; 2>/dev/null
+        fi
+        
+        if [ -d "report/test" ] && [ "$(ls -A report/test 2>/dev/null)" ]; then
+            echo -e "  ${YELLOW}→ 清理 test 测试报告${NC}"
+            find report/test -name "*.md" -type f -exec trash {} \; 2>/dev/null
+        fi
+        
+        if [ -d "report/ast" ] && [ "$(ls -A report/ast 2>/dev/null)" ]; then
+            echo -e "  ${YELLOW}→ 清理 AST 报告${NC}"
+            find report/ast -name "*.md" -type f -exec trash {} \; 2>/dev/null
+        fi
+        
+        if [ -d "report/error" ] && [ "$(ls -A report/error 2>/dev/null)" ]; then
+            echo -e "  ${YELLOW}→ 清理 error 测试报告${NC}"
+            find report/error -name "*.md" -type f -exec trash {} \; 2>/dev/null
+        fi
+        
+        # 清理根目录下的旧报告
+        if [ "$(find report -maxdepth 1 -name "*.md" -type f 2>/dev/null)" ]; then
+            echo -e "  ${YELLOW}→ 清理根目录报告${NC}"
+            find report -maxdepth 1 -name "*.md" -type f -exec trash {} \; 2>/dev/null
         fi
         
         # 清理平台配置文件
@@ -195,7 +216,10 @@ check_dir_empty "output/ast" "AST 输出"
 check_dir_empty "output/llvm" "LLVM IR 输出"
 check_dir_empty "output/token" "Token 输出"
 check_dir_empty "output/exec" "可执行文件"
-check_dir_empty "report" "测试报告"
+check_dir_empty "report/code" "Code 报告"
+check_dir_empty "report/test" "Test 报告"
+check_dir_empty "report/ast" "AST 报告"
+check_dir_empty "report/error" "Error 报告"
 
 # 检查编译器状态
 echo ""

@@ -1,0 +1,21 @@
+# 多个错误
+# 测试包含多种错误的代码
+
+func add(a, b) {
+    return a + b
+}
+
+func main(): int {
+    let x int = 10
+    let y: string = 20
+    let z: int = unknownVar
+    print("Hello ${name"
+    
+    if x > 5 {
+        break
+    }
+    
+    const PI: double = 3.14
+    PI = 3.14159
+    
+    return 0

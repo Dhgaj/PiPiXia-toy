@@ -189,7 +189,7 @@ echo -e "${GREEN}平台配置已保存到 .platform_config${NC}"
 if [ ${#VERSION_WARNINGS[@]} -gt 0 ]; then
     echo ""
     echo -e "${YELLOW}========================================${NC}"
-    echo -e "${YELLOW}⚠  版本差异提醒${NC}"
+    echo -e "${YELLOW}           ⚠️  版本差异提醒${NC}"
     echo -e "${YELLOW}========================================${NC}"
     echo -e "${CYAN}检测到以下工具版本与 README.md 中已测试版本不一致：${NC}"
     echo ""

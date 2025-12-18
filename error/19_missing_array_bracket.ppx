@@ -1,0 +1,8 @@
+# 缺少数组右方括号错误
+# 测试数组声明缺少右方括号
+
+func main(): int {
+    let arr: int[5 = [1, 2, 3, 4, 5]
+    print(arr[0])
+    return 0
+}

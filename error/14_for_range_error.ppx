@@ -1,0 +1,9 @@
+# for循环范围语法错误
+# 测试for循环使用错误的范围语法
+
+func main(): int {
+    for i in 0...10 {
+        print(i)
+    }
+    return 0
+}

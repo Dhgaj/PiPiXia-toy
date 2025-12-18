@@ -1,0 +1,7 @@
+# 缺少func关键字错误
+# 测试函数定义时缺少func关键字
+
+main(): int {
+    print("Hello World!")
+    return 0
+}

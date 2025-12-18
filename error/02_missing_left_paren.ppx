@@ -1,0 +1,10 @@
+# 缺少左括号错误
+# 测试if语句缺少左括号 (
+
+func main(): int {
+    let x: int = 10
+    if x > 5) {
+        print("大于5")
+    }
+    return 0
+}

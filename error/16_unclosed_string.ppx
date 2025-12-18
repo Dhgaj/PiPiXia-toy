@@ -1,0 +1,8 @@
+# 字符串未闭合错误
+# 测试字符串缺少结束引号
+
+func main(): int {
+    let msg: string = "Hello World
+    print(msg)
+    return 0
+}

@@ -1,0 +1,10 @@
+# switch语句缺少case错误
+# 测试switch语句没有case分支
+
+func main(): int {
+    let day: int = 3
+    switch day {
+        print("没有case")
+    }
+    return 0
+}

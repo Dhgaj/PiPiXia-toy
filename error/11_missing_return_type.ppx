@@ -1,0 +1,12 @@
+# 缺少返回类型错误
+# 测试函数有return语句但声明中缺少返回类型
+
+func add(a: int, b: int) {
+    return a + b
+}
+
+func main(): int {
+    let result: int = add(1, 2)
+    print(result)
+    return 0
+}

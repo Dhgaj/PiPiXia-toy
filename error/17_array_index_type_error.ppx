@@ -1,0 +1,9 @@
+# 数组索引类型错误
+# 测试使用非整数类型作为数组索引
+
+func main(): int {
+    let arr: int[5] = [1, 2, 3, 4, 5]
+    let idx: double = 2.5
+    print(arr[idx])
+    return 0
+}

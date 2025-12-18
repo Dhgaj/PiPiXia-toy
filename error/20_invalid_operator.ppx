@@ -1,0 +1,9 @@
+# 无效运算符错误
+# 测试使用不支持的运算符
+
+func main(): int {
+    let x: int = 10
+    let y: int = x ** 2
+    print(y)
+    return 0
+}

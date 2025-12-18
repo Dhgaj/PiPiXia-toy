@@ -1,0 +1,8 @@
+# 缺少表达式错误
+# 测试赋值语句缺少右侧表达式
+
+func main(): int {
+    let x: int = 
+    print(x)
+    return 0
+}

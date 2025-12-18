@@ -1,0 +1,7 @@
+# 未定义变量错误
+# 测试使用未声明的变量
+
+func main(): int {
+    print(undefinedVar)
+    return 0
+}

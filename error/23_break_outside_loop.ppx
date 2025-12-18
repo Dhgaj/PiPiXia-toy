@@ -1,0 +1,10 @@
+# break语句位置错误
+# 测试在循环外使用break语句
+
+func main(): int {
+    let x: int = 10
+    if (x > 5) {
+        break
+    }
+    return 0
+}
