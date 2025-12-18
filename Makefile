@@ -105,7 +105,7 @@ codegen.o: $(CODEGEN_SRC) codegen.h node.h
 # 测试 - 运行统一测试脚本
 test: $(TARGET)
 	@echo "运行代码测试..."
-	@bash scripts/03_make_test.sh
+	@bash scripts/03_run_code.sh
 
 # 运行指定的.ppx文件
 run: $(TARGET)
@@ -118,11 +118,11 @@ run: $(TARGET)
 
 # 清理生成的文件
 clean:
-	@bash scripts/04_make_clean.sh normal
+	@bash scripts/04_run_clean.sh normal
 
 # 清理所有文件包括可执行文件
 distclean:
-	@bash scripts/04_make_clean.sh all
+	@bash scripts/04_run_clean.sh all
 
 # 卸载
 uninstall:
@@ -150,8 +150,11 @@ help:
 	@echo "脚本工具："
 	@echo "  ./scripts/01_detect_platform.sh              # 检测平台并生成配置"
 	@echo "  ./scripts/02_auto_build.sh                   # 自动构建脚本"
-	@echo "  ./scripts/03_make_test.sh                    # 运行所有测试"
-	@echo "  ./scripts/04_make_clean.sh [normal|all|deep]  # 项目清理"
+	@echo "  ./scripts/03_run_code.sh                     # 运行code目录测试"
+	@echo "  ./scripts/04_run_clean.sh [normal|all|deep]  # 项目清理"
+	@echo "  ./scripts/05_run_test.sh                     # 运行test目录测试"
+	@echo "  ./scripts/06_run_ast.sh                      # 生成AST可视化报告"
+	@echo "  ./scripts/08_run_error.sh                    # 运行错误测试"
 	@echo ""
 	@echo "平台检测："
 	@echo "  首次编译前建议运行: ./scripts/01_detect_platform.sh"
