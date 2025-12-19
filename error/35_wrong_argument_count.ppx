@@ -1,0 +1,12 @@
+# 参数数量错误
+# 测试函数调用参数数量不匹配
+
+func add(a: int, b: int): int {
+    return a + b
+}
+
+func main(): int {
+    let result: int = add(1)
+    print(result)
+    return 0
+}

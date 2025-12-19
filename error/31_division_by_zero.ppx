@@ -1,0 +1,8 @@
+# 除零错误
+# 测试编译时静态检测除以常量0
+
+func main(): int {
+    let x: int = 10 / 0
+    print(x)
+    return 0
+}

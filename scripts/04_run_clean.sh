@@ -71,6 +71,21 @@ case "${CLEAN_TYPE}" in
             rm -f output/exec/*
         fi
         
+        if [ -d "output/symbols" ] && [ "$(ls -A output/symbols 2>/dev/null)" ]; then
+            echo -e "  ${YELLOW}→ 清理符号表文件${NC}"
+            rm -f output/symbols/*
+        fi
+        
+        if [ -d "output/tac" ] && [ "$(ls -A output/tac 2>/dev/null)" ]; then
+            echo -e "  ${YELLOW}→ 清理三地址码文件${NC}"
+            rm -f output/tac/*
+        fi
+        
+        if [ -d "output/ast_visualized" ] && [ "$(ls -A output/ast_visualized 2>/dev/null)" ]; then
+            echo -e "  ${YELLOW}→ 清理AST可视化文件${NC}"
+            rm -f output/ast_visualized/*.png
+        fi
+        
         # 清理测试报告（各子目录）
         if [ -d "report/code" ] && [ "$(ls -A report/code 2>/dev/null)" ]; then
             echo -e "  ${YELLOW}→ 清理 code 测试报告${NC}"
@@ -102,6 +117,12 @@ case "${CLEAN_TYPE}" in
         if [ -f ".platform_config" ]; then
             echo -e "  ${YELLOW}→ 清理平台配置文件${NC}"
             rm -f .platform_config
+        fi
+        
+        # 清理Python缓存
+        if [ -d "scripts/__pycache__" ]; then
+            echo -e "  ${YELLOW}→ 清理Python缓存${NC}"
+            rm -rf scripts/__pycache__
         fi
 
         echo ""
@@ -216,6 +237,9 @@ check_dir_empty "output/ast" "AST 输出"
 check_dir_empty "output/llvm" "LLVM IR 输出"
 check_dir_empty "output/token" "Token 输出"
 check_dir_empty "output/exec" "可执行文件"
+check_dir_empty "output/symbols" "符号表"
+check_dir_empty "output/tac" "三地址码"
+check_dir_empty "output/ast_visualized" "AST 可视化"
 check_dir_empty "report/code" "Code 报告"
 check_dir_empty "report/test" "Test 报告"
 check_dir_empty "report/ast" "AST 报告"

@@ -1,6 +1,0 @@
-func main(): int {
-    let a: int = 10
-    let b: int = 3
-    print("a % b = ${a % b}")
-    return 0
-}
