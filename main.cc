@@ -23,15 +23,11 @@
 #include <algorithm>
 #include "node.h"
 #include "codegen.h"
+#include "error.h"
 #include "syntax.hh"
 
 // 全局日志控制变量，控制是否输出详细的编译过程信息
 bool g_verbose = false;
-
-// ANSI 转义码定义
-static const char* ANSI_RED = "\033[1;31m";     // Error 时粗体红色
-static const char* ANSI_YELLOW = "\033[1;33m";  // Warning 时粗体黄色
-static const char* ANSI_RESET = "\033[0m";      // 重置颜色
 
 // 来自 Flex/Bison 的外部声明
 extern FILE* yyin;                                  // Flex 输入文件指针
@@ -41,8 +37,8 @@ extern std::shared_ptr<ProgramNode> root;           // AST 根节点
 extern int yylineno;                                // 当前行号
 extern union YYSTYPE yylval;                        // Token 值
 
-// 来自 syntax.y 的源文件加载函数
-extern void loadSourceFile(const std::string& filename);
+// 来自 error.h 的源文件加载函数和错误计数器
+// loadSourceFile 和 g_syntaxErrorCount 已在 error.h 中声明
 
 // 文件名处理辅助函数：更改文件扩展名
 std::string changeExtension(const std::string& filename, const std::string& newExt) {
@@ -139,7 +135,7 @@ bool tokenizeFile(const std::string& inputFile, const std::string& outputFile = 
     if (!outputFile.empty()) {
         outFile.open(outputFile);
         if (!outFile.is_open()) {
-            std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": Cannot create output file '" << outputFile << "'" << std::endl;
+            std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Cannot create output file '" << outputFile << "'" << std::endl;
             return false;
         }
     }
@@ -214,7 +210,7 @@ bool tokenizeFile(const std::string& inputFile, const std::string& outputFile = 
         }
         
         if (token == ERROR) {
-            std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": Lexical analysis stopped due to error" << std::endl;
+            std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Lexical analysis stopped due to error" << std::endl;
             return false;
         }
     }
@@ -252,6 +248,11 @@ void printUsage(const char* programName) {
     std::cout << "  -c             输出目标文件（.o），不生成可执行文件" << std::endl;
     std::cout << "                 可使用 -c -o <目录/文件.o> 指定输出路径" << std::endl;
     std::cout << "  -v, --verbose  启用详细日志 (AST 解析和 IR 生成)" << std::endl;
+    std::cout << "  -Wall          启用所有警告" << std::endl;
+    std::cout << "  -Werror        将警告视为错误" << std::endl;
+    std::cout << "  -w             禁用所有警告" << std::endl;
+    std::cout << "  -Wno-unused    禁用未使用变量警告" << std::endl;
+    std::cout << "  -Wshadow       启用变量遮蔽警告" << std::endl;
     std::cout << "  -h, --help     显示此帮助信息" << std::endl;
     std::cout << "\n示例:" << std::endl;
     std::cout << "  " << programName << " code/main.ppx                     # 编译到可执行文件 main" << std::endl;
@@ -312,24 +313,33 @@ int main(int argc, char** argv) {
             compileToObj = true;
         } else if (arg == "-v" || arg == "--verbose") {
             g_verbose = true;
+        } else if (arg == "-Wall") {
+            enableAllWarnings();
+        } else if (arg == "-Werror") {
+            setWarningsAsErrors(true);
+        } else if (arg == "-w") {
+            suppressAllWarnings();
+        } else if (arg.substr(0, 2) == "-W" && arg.length() > 2) {
+            // 解析 -Wxx 选项
+            setWarningOption(arg.substr(2));
         } else if (arg == "-o") {
             if (i + 1 < argc) {
                 outputFile = argv[++i];
             } else {
-                std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": -o 选项需要指定输出文件名" << std::endl;
+                std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": -o 选项需要指定输出文件名" << std::endl;
                 return 1;
             }
         } else if (arg[0] != '-') {
             inputFile = arg;
         } else {
-            std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": 未知选项 '" << arg << "'" << std::endl;
+            std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": 未知选项 '" << arg << "'" << std::endl;
             printUsage(argv[0]);
             return 1;
         }
     }
 
     if (inputFile.empty()) {
-        std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": 未指定输入文件" << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": 未指定输入文件" << std::endl;
         printUsage(argv[0]);
         return 1;
     }
@@ -368,7 +378,7 @@ int main(int argc, char** argv) {
 
     // 检查输入文件是否有.ppx扩展名
     if (inputFile.length() < 4 || inputFile.substr(inputFile.length() - 4) != ".ppx") {
-        std::cerr << ANSI_YELLOW << "Warning" << ANSI_RESET << ": 输入文件应使用 .ppx 扩展名" << std::endl;
+        std::cerr << ErrorColors::YELLOW << "Warning" << ErrorColors::RESET << ": 输入文件应使用 .ppx 扩展名" << std::endl;
     }
 
     // 文件打开和初始化
@@ -376,7 +386,7 @@ int main(int argc, char** argv) {
     // 打开输入文件
     FILE* file = fopen(inputFile.c_str(), "r");
     if (!file) {
-        std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": 无法打开文件 '" << inputFile << "'" << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": 无法打开文件 '" << inputFile << "'" << std::endl;
         return 1;
     }
 
@@ -429,7 +439,7 @@ int main(int argc, char** argv) {
         fclose(file);
         file = fopen(inputFile.c_str(), "r");
         if (!file) {
-            std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": 无法重新打开文件进行语法分析" << std::endl;
+            std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": 无法重新打开文件进行语法分析" << std::endl;
             return 1;
         }
         yyin = file;
@@ -456,7 +466,7 @@ int main(int argc, char** argv) {
             std::cout << "Input:  " << inputFile << std::endl;
             std::cout << "Output: " << tokenOutput << std::endl;
         } else {
-            std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": Token analysis failed" << std::endl;
+            std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Token analysis failed" << std::endl;
             return 1;
         }
         
@@ -473,8 +483,8 @@ int main(int argc, char** argv) {
     int parseResult = yyparse();
     fclose(file);
 
-    if (parseResult != 0) {
-        std::cerr << "\nCompilation failed with errors." << std::endl;
+    if (parseResult != 0 || g_syntaxErrorCount > 0) {
+        std::cerr << "\nCompilation failed with " << g_syntaxErrorCount << " syntax error(s)." << std::endl;
         return 1;
     }
 
@@ -544,7 +554,7 @@ int main(int argc, char** argv) {
     }
 
     if (!hasMain) {
-        std::cerr << ANSI_YELLOW << "Warning" << ANSI_RESET << ": 程序中未找到 'main' 函数" << std::endl;
+        std::cerr << ErrorColors::YELLOW << "Warning" << ErrorColors::RESET << ": 程序中未找到 'main' 函数" << std::endl;
     }
 
     // LLVM模式检查 
@@ -556,6 +566,9 @@ int main(int argc, char** argv) {
     // LLVM IR 代码生成
     if (generateLLVM && root) {
         std::cout << "\n=== LLVM Code Generation ===" << std::endl;
+        
+        // 设置源文件路径（用于语义错误报告显示源代码上下文）
+        setSourceFilePath(inputFile);
         
         CodeGenerator codegen(inputFile);
         
@@ -586,7 +599,7 @@ int main(int argc, char** argv) {
                 if (codegen.compileToExecutable(exeOutput)) {
                     std::cout << "Executable generated: " << exeOutput << std::endl;
                 } else {
-                    std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": Failed to generate executable" << std::endl;
+                    std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Failed to generate executable" << std::endl;
                 }
             // 目标文件生成
             } else if (compileToObj) {
@@ -603,7 +616,7 @@ int main(int argc, char** argv) {
                 if (codegen.compileToObjectFile(objOutput)) {
                     std::cout << "Object file generated: " << objOutput << std::endl;
                 } else {
-                    std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": Failed to generate object file" << std::endl;
+                    std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Failed to generate object file" << std::endl;
                 }
             // LLVM IR输出（既显示又保存）
             } else if (printSymbols) {
@@ -656,7 +669,7 @@ int main(int argc, char** argv) {
                 }
             }
         } else {
-            std::cerr << ANSI_RED << "Error" << ANSI_RESET << ": LLVM IR generation failed" << std::endl;
+            std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": LLVM IR generation failed" << std::endl;
             compilationFailed = true;
         }
     }

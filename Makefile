@@ -45,7 +45,8 @@ LEXER_SRC = lexical.l
 PARSER_SRC = syntax.y
 MAIN_SRC = main.cc
 CODEGEN_SRC = codegen.cc
-HEADER = node.h codegen.h
+ERROR_SRC = error.cc
+HEADER = node.h codegen.h error.h
 
 # 生成的文件
 LEXER_OUT = lexical.cc
@@ -53,7 +54,7 @@ PARSER_OUT = syntax.cc
 PARSER_HEADER = syntax.hh
 
 # 目标文件
-OBJS = lexical.o syntax.o main.o codegen.o
+OBJS = lexical.o syntax.o main.o codegen.o error.o
 
 # 默认目标
 all: $(TARGET)
@@ -98,9 +99,14 @@ main.o: $(MAIN_SRC) $(HEADER) $(PARSER_HEADER)
 	$(CXX) $(CXXFLAGS) -c $(MAIN_SRC) -o main.o
 
 # 编译代码生成器
-codegen.o: $(CODEGEN_SRC) codegen.h node.h
+codegen.o: $(CODEGEN_SRC) codegen.h node.h error.h
 	@echo "Compiling LLVM code generator..."
 	$(CXX) $(CXXFLAGS) -c $(CODEGEN_SRC) -o codegen.o
+
+# 编译错误处理模块
+error.o: $(ERROR_SRC) error.h
+	@echo "Compiling error handler..."
+	$(CXX) $(CXXFLAGS) -c $(ERROR_SRC) -o error.o
 
 # 测试 - 运行统一测试脚本
 test: $(TARGET)

@@ -1,0 +1,7 @@
+# 缺少数组字面量左方括号错误
+# 测试数组字面量缺少左方括号
+
+func main(): int {
+    let arr: int[3] = 1, 2, 3]
+    return arr[0]
+}

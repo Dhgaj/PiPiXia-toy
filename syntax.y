@@ -4,48 +4,14 @@
 #include <memory>
 #include <cctype>
 #include <cstring>
-#include <fstream>
-#include <vector>
-#include <iomanip>
 #include "node.h"
+#include "error.h"
 
 extern int yylex();
 extern int yylineno;
 extern char* yytext;  
 extern bool g_verbose;  
 void yyerror(const char* s);
-
-// ANSI 颜色码
-static const char* ERR_RED = "\033[1;31m";
-static const char* ERR_CYAN = "\033[36m";
-static const char* ERR_RESET = "\033[0m";
-static const char* ERR_BOLD = "\033[1m";
-
-// 源代码行缓存，用于错误报告时显示上下文
-std::vector<std::string> g_sourceLines;
-std::string g_currentFile;
-
-// 加载源文件内容到缓存
-void loadSourceFile(const std::string& filename) {
-    g_currentFile = filename;
-    g_sourceLines.clear();
-    std::ifstream file(filename);
-    if (file.is_open()) {
-        std::string line;
-        while (std::getline(file, line)) {
-            g_sourceLines.push_back(line);
-        }
-        file.close();
-    }
-}
-
-// 获取指定行的源代码
-std::string getSourceLine(int lineNum) {
-    if (lineNum > 0 && lineNum <= static_cast<int>(g_sourceLines.size())) {
-        return g_sourceLines[lineNum - 1];
-    }
-    return "";
-}
 
 std::shared_ptr<ProgramNode> root;
 
@@ -73,6 +39,11 @@ public:
     char peek() {
         skipWhitespace();
         return pos < expr.length() ? expr[pos] : '\0';
+    }
+    
+    char peekNext() {
+        skipWhitespace();
+        return pos + 1 < expr.length() ? expr[pos + 1] : '\0';
     }
     
     char consume() {
@@ -134,6 +105,21 @@ std::shared_ptr<ExprNode> parseSimpleLogical(SimpleTokenizer& tok);
 std::shared_ptr<ExprNode> parseSimpleExpr(SimpleTokenizer& tok) {
     char ch = tok.peek();
     
+    // 处理一元运算符 ! 和 -
+    if (ch == '!') {
+        tok.consume();
+        auto operand = parseSimpleExpr(tok);
+        if (!operand) return nullptr;
+        return std::make_shared<UnaryOpNode>("!", operand);
+    }
+    
+    if (ch == '-' && !std::isdigit(tok.peekNext())) {
+        tok.consume();
+        auto operand = parseSimpleExpr(tok);
+        if (!operand) return nullptr;
+        return std::make_shared<UnaryOpNode>("-", operand);
+    }
+    
     if (ch == '(') {
         tok.consume();
         auto expr = parseSimpleLogical(tok);
@@ -141,7 +127,7 @@ std::shared_ptr<ExprNode> parseSimpleExpr(SimpleTokenizer& tok) {
         return expr;
     }
     
-    if (std::isdigit(ch)) {
+    if (std::isdigit(ch) || (ch == '-' && std::isdigit(tok.peekNext()))) {
         std::string numStr = tok.consumeNumber();
         if (numStr.find('.') != std::string::npos) {
             return std::make_shared<DoubleLiteralNode>(std::stod(numStr));
@@ -365,7 +351,7 @@ InterpolatedStringNode* parseInterpolatedString(const std::string& raw) {
                 
                 pos = end + 1;
             } else {
-                std::cerr << "Error: Unclosed ${} in interpolated string" << std::endl;
+                yyerror("字符串插值语法错误：未闭合的 ${}");
                 return nullptr;
             }
         } else {
@@ -560,11 +546,13 @@ var_decl:
         }
         $$ = new VarDeclNode(false, *$2, std::shared_ptr<TypeNode>($4), 
                              std::shared_ptr<ExprNode>($6));
+        $$->lineNumber = @1.first_line;  // 使用规则开始的行号
         delete $2;
     }
     | CONST IDENTIFIER COLON type_spec ASSIGN expression {
         $$ = new VarDeclNode(true, *$2, std::shared_ptr<TypeNode>($4), 
                              std::shared_ptr<ExprNode>($6));
+        $$->lineNumber = @1.first_line;  // 使用规则开始的行号
         delete $2;
     }
     ;
@@ -598,6 +586,7 @@ function_decl:
             std::cout << "[AST] Parsing function: " << *$2 << std::endl;
         }
         auto func = new FunctionDeclNode(*$2);
+        func->lineNumber = @1.first_line;  // 函数声明行号
         func->body = std::shared_ptr<BlockNode>($6);
         if ($4) {
             func->parameters = *$4;
@@ -611,6 +600,7 @@ function_decl:
             std::cout << "[AST] Parsing function: " << *$2 << " -> " << $7->typeName << std::endl;
         }
         auto func = new FunctionDeclNode(*$2);
+        func->lineNumber = @1.first_line;  // 函数声明行号
         func->returnType = std::shared_ptr<TypeNode>($7);
         func->body = std::shared_ptr<BlockNode>($8);
         if ($4) {
@@ -690,21 +680,25 @@ for_stmt:
 return_stmt:
     RETURN expression {
         $$ = new ReturnStmtNode(std::shared_ptr<ExprNode>($2));
+        $$->lineNumber = @1.first_line;
     }
     | RETURN {
         $$ = new ReturnStmtNode();
+        $$->lineNumber = @1.first_line;
     }
     ;
 
 break_stmt:
     BREAK {
         $$ = new BreakStmtNode();
+        $$->lineNumber = yylineno;
     }
     ;
 
 continue_stmt:
     CONTINUE {
         $$ = new ContinueStmtNode();
+        $$->lineNumber = yylineno;
     }
     ;
 
@@ -763,30 +757,37 @@ assignment:
     postfix_expr ASSIGN expression {
         $$ = new AssignmentNode(std::shared_ptr<ExprNode>($1), "=", 
                                 std::shared_ptr<ExprNode>($3));
+        $$->lineNumber = @1.first_line;
     }
     | postfix_expr PLUS_ASSIGN expression {
         $$ = new AssignmentNode(std::shared_ptr<ExprNode>($1), "+=", 
                                 std::shared_ptr<ExprNode>($3));
+        $$->lineNumber = @1.first_line;
     }
     | postfix_expr MINUS_ASSIGN expression {
         $$ = new AssignmentNode(std::shared_ptr<ExprNode>($1), "-=", 
                                 std::shared_ptr<ExprNode>($3));
+        $$->lineNumber = @1.first_line;
     }
     | postfix_expr MULT_ASSIGN expression {
         $$ = new AssignmentNode(std::shared_ptr<ExprNode>($1), "*=", 
                                 std::shared_ptr<ExprNode>($3));
+        $$->lineNumber = @1.first_line;
     }
     | postfix_expr DIV_ASSIGN expression {
         $$ = new AssignmentNode(std::shared_ptr<ExprNode>($1), "/=", 
                                 std::shared_ptr<ExprNode>($3));
+        $$->lineNumber = @1.first_line;
     }
     | postfix_expr FLOORDIV_ASSIGN expression {
         $$ = new AssignmentNode(std::shared_ptr<ExprNode>($1), "//=", 
                                 std::shared_ptr<ExprNode>($3));
+        $$->lineNumber = @1.first_line;
     }
     | postfix_expr MOD_ASSIGN expression {
         $$ = new AssignmentNode(std::shared_ptr<ExprNode>($1), "%=", 
                                 std::shared_ptr<ExprNode>($3));
+        $$->lineNumber = @1.first_line;
     }
     ;
 
@@ -873,14 +874,17 @@ multiplicative_expr:
     | multiplicative_expr DIVIDE unary_expr {
         $$ = new BinaryOpNode("/", std::shared_ptr<ExprNode>($1), 
                               std::shared_ptr<ExprNode>($3));
+        $$->lineNumber = @1.first_line;
     }
     | multiplicative_expr FLOORDIV unary_expr {
         $$ = new BinaryOpNode("//", std::shared_ptr<ExprNode>($1), 
                               std::shared_ptr<ExprNode>($3));
+        $$->lineNumber = @1.first_line;
     }
     | multiplicative_expr MODULO unary_expr {
         $$ = new BinaryOpNode("%", std::shared_ptr<ExprNode>($1), 
                               std::shared_ptr<ExprNode>($3));
+        $$->lineNumber = @1.first_line;
     }
     ;
 
@@ -899,6 +903,7 @@ postfix_expr:
     | postfix_expr LBRACKET expression RBRACKET {
         $$ = new ArrayAccessNode(std::shared_ptr<ExprNode>($1), 
                                  std::shared_ptr<ExprNode>($3));
+        $$->lineNumber = @1.first_line;
     }
     | postfix_expr DOT IDENTIFIER {
         $$ = new MemberAccessNode(std::shared_ptr<ExprNode>($1), *$3);
@@ -985,295 +990,7 @@ array_elements:
 
 %%
 
-
-
-// 将 Bison 生成的错误信息转换为更友好的中文描述
-std::string translateErrorMessage(const std::string& msg) {
-    std::string result = msg;
-    
-    // Token 名称翻译映射
-    struct TokenTranslation {
-        const char* from;
-        const char* to;
-    };
-    
-    static const TokenTranslation translations[] = {
-        // 关键字
-        {"RETURN", "'return'"},
-        {"LET", "'let'"},
-        {"CONST", "'const'"},
-        {"FUNC", "'func'"},
-        {"IF", "'if'"},
-        {"ELSE", "'else'"},
-        {"WHILE", "'while'"},
-        {"FOR", "'for'"},
-        {"IN", "'in'"},
-        {"BREAK", "'break'"},
-        {"CONTINUE", "'continue'"},
-        {"SWITCH", "'switch'"},
-        {"CASE", "'case'"},
-        {"DEFAULT", "'default'"},
-        {"IMPORT", "'import'"},
-        {"TRY", "'try'"},
-        {"CATCH", "'catch'"},
-        {"THROW", "'throw'"},
-        
-        // 分隔符
-        {"RPAREN", "')' (右括号)"},
-        {"LPAREN", "'(' (左括号)"},
-        {"RBRACE", "'}' (右花括号)"},
-        {"LBRACE", "'{' (左花括号)"},
-        {"RBRACKET", "']' (右方括号)"},
-        {"LBRACKET", "'[' (左方括号)"},
-        {"COMMA", "','"},
-        {"COLON", "':'"},
-        {"SEMICOLON", "';'"},
-        {"DOT", "'.'"},
-        {"DOTDOT", "'..'"},
-        
-        // 运算符
-        {"ASSIGN", "'='"},
-        {"PLUS_ASSIGN", "'+='"},
-        {"MINUS_ASSIGN", "'-='"},
-        {"MULT_ASSIGN", "'*='"},
-        {"DIV_ASSIGN", "'/='"},
-        {"MOD_ASSIGN", "'%='"},
-        {"PLUS", "'+'"},
-        {"MINUS", "'-'"},
-        {"MULTIPLY", "'*'"},
-        {"DIVIDE", "'/'"},
-        {"MODULO", "'%'"},
-        {"EQ", "'=='"},
-        {"NE", "'!='"},
-        {"LT", "'<'"},
-        {"GT", "'>'"},
-        {"LE", "'<='"},
-        {"GE", "'>='"},
-        {"AND", "'&&'"},
-        {"OR", "'||'"},
-        {"NOT", "'!'"},
-        
-        // 字面量
-        {"INT_LITERAL", "整数"},
-        {"DOUBLE_LITERAL", "浮点数"},
-        {"STRING_LITERAL", "字符串"},
-        {"CHAR_LITERAL", "字符"},
-        {"BOOL_LITERAL", "布尔值"},
-        {"IDENTIFIER", "标识符"},
-        {"TYPE", "类型"},
-        
-        // 错误描述
-        {"syntax error", "语法错误"},
-        {"unexpected", "遇到意外的"},
-        {"expecting", "期望"},
-        {"$end", "文件结尾"},
-        {nullptr, nullptr}
-    };
-    
-    for (const auto& t : translations) {
-        if (t.from == nullptr) break;
-        size_t pos = 0;
-        while ((pos = result.find(t.from, pos)) != std::string::npos) {
-            result.replace(pos, strlen(t.from), t.to);
-            pos += strlen(t.to);
-        }
-    }
-    
-    return result;
-}
-
-// 辅助函数：去除字符串首尾空白
-std::string trim(const std::string& str) {
-    size_t start = str.find_first_not_of(" \t");
-    if (start == std::string::npos) return "";
-    size_t end = str.find_last_not_of(" \t");
-    return str.substr(start, end - start + 1);
-}
-
-// 辅助函数：检查字符串是否以指定前缀开头
-bool startsWith(const std::string& str, const std::string& prefix) {
-    return str.length() >= prefix.length() && str.substr(0, prefix.length()) == prefix;
-}
-
-// 辅助函数：检查字符串是否以指定后缀结尾
-bool endsWith(const std::string& str, const std::string& suffix) {
-    return str.length() >= suffix.length() && 
-           str.substr(str.length() - suffix.length()) == suffix;
-}
-
-// 分析上下文并生成修复建议
-std::string generateHint(const std::string& errorMsg, int lineNum) {
-    std::string currentLine = trim(getSourceLine(lineNum));
-    std::string prevLine = (lineNum > 1) ? trim(getSourceLine(lineNum - 1)) : "";
-    std::string lineNumStr = std::to_string(lineNum);
-    std::string prevLineNumStr = std::to_string(lineNum - 1);
-    
-    // 检查当前行的错误模式
-    if (!currentLine.empty()) {
-        // if 语句缺少条件: if { 或 if 后直接跟 {
-        if (currentLine == "if" || currentLine == "if {") {
-            return "提示: 第 " + lineNumStr + " 行的 'if' 语句缺少条件表达式，格式: if 条件 { ... }";
-        }
-        
-        // while 语句缺少条件
-        if (currentLine == "while" || currentLine == "while {") {
-            return "提示: 第 " + lineNumStr + " 行的 'while' 语句缺少条件表达式，格式: while 条件 { ... }";
-        }
-        
-        // for 语句不完整
-        if (startsWith(currentLine, "for ") || currentLine == "for") {
-            if (currentLine.find(" in ") == std::string::npos) {
-                return "提示: 第 " + lineNumStr + " 行的 'for' 语句格式不完整，格式: for 变量 in 起始..结束 { ... }";
-            }
-            if (currentLine.find("..") == std::string::npos) {
-                return "提示: 第 " + lineNumStr + " 行的 'for' 语句缺少范围运算符 '..'，格式: for 变量 in 起始..结束 { ... }";
-            }
-        }
-        
-        // func 函数定义不完整
-        if (startsWith(currentLine, "func ")) {
-            if (currentLine.find("(") == std::string::npos) {
-                return "提示: 第 " + lineNumStr + " 行的函数定义缺少参数列表 '()'";
-            }
-            if (currentLine.find("{") == std::string::npos && currentLine.find(")") != std::string::npos) {
-                size_t parenPos = currentLine.find(")");
-                std::string afterParen = trim(currentLine.substr(parenPos + 1));
-                if (afterParen.empty()) {
-                    return "提示: 第 " + lineNumStr + " 行的函数定义缺少函数体 '{}'";
-                }
-            }
-        }
-        
-        // switch 缺少表达式
-        if (currentLine == "switch" || currentLine == "switch {") {
-            return "提示: 第 " + lineNumStr + " 行的 'switch' 语句缺少匹配表达式，格式: switch 表达式 { case ... }";
-        }
-        
-        // case 缺少值
-        if (currentLine == "case" || currentLine == "case:") {
-            return "提示: 第 " + lineNumStr + " 行的 'case' 子句缺少匹配值，格式: case 值: { ... }";
-        }
-    }
-    
-    // 检查前一行的错误模式
-    if (!prevLine.empty()) {
-        // 变量声明缺少初始值: let x: type = 
-        if (startsWith(prevLine, "let ") || startsWith(prevLine, "const ")) {
-            if (endsWith(prevLine, "=") || endsWith(prevLine, "= ")) {
-                return "提示: 第 " + prevLineNumStr + " 行的变量声明缺少初始值";
-            }
-            // 变量声明缺少类型: let x = 
-            if (prevLine.find(":") == std::string::npos && prevLine.find("=") != std::string::npos) {
-                return "提示: 第 " + prevLineNumStr + " 行的变量声明可能缺少类型注解，格式: let 变量: 类型 = 值";
-            }
-        }
-        
-        // 函数调用缺少参数或括号: func(
-        if (endsWith(prevLine, "(") || endsWith(prevLine, "( ")) {
-            return "提示: 第 " + prevLineNumStr + " 行可能缺少参数或 ')'";
-        }
-        
-        // 不完整的表达式: + - * / 结尾
-        char lastChar = prevLine.back();
-        if (lastChar == '+' || lastChar == '-' || lastChar == '*' || lastChar == '/' || lastChar == '%') {
-            return "提示: 第 " + prevLineNumStr + " 行的表达式不完整";
-        }
-        
-        // 比较运算符不完整: == != < > <= >= 结尾
-        if (endsWith(prevLine, "==") || endsWith(prevLine, "!=") || 
-            endsWith(prevLine, "<=") || endsWith(prevLine, ">=") ||
-            endsWith(prevLine, "&&") || endsWith(prevLine, "||")) {
-            return "提示: 第 " + prevLineNumStr + " 行的表达式不完整，缺少右侧操作数";
-        }
-        
-        // 赋值运算符不完整
-        if (endsWith(prevLine, "+=") || endsWith(prevLine, "-=") || 
-            endsWith(prevLine, "*=") || endsWith(prevLine, "/=") || endsWith(prevLine, "%=")) {
-            return "提示: 第 " + prevLineNumStr + " 行的复合赋值表达式不完整";
-        }
-        
-        // if/while/for 语句缺少花括号
-        if (startsWith(prevLine, "if ") && prevLine.find("{") == std::string::npos) {
-            return "提示: 第 " + prevLineNumStr + " 行的 'if' 语句缺少 '{'";
-        }
-        if (startsWith(prevLine, "while ") && prevLine.find("{") == std::string::npos) {
-            return "提示: 第 " + prevLineNumStr + " 行的 'while' 语句缺少 '{'";
-        }
-        if (startsWith(prevLine, "for ") && prevLine.find("{") == std::string::npos) {
-            return "提示: 第 " + prevLineNumStr + " 行的 'for' 语句缺少 '{'";
-        }
-        
-        // 数组访问不完整: arr[
-        if (endsWith(prevLine, "[")) {
-            return "提示: 第 " + prevLineNumStr + " 行的数组访问不完整，缺少索引和 ']'";
-        }
-        
-        // 冒号后缺少类型
-        if (endsWith(prevLine, ":") || endsWith(prevLine, ": ")) {
-            return "提示: 第 " + prevLineNumStr + " 行可能缺少类型声明";
-        }
-    }
-    
-    // 根据错误信息提供通用建议
-    if (errorMsg.find("期望") != std::string::npos) {
-        if (errorMsg.find("')'") != std::string::npos) {
-            return "提示: 检查是否有未闭合的括号 '('";
-        }
-        if (errorMsg.find("'}'") != std::string::npos) {
-            return "提示: 检查是否有未闭合的花括号 '{'";
-        }
-        if (errorMsg.find("']'") != std::string::npos) {
-            return "提示: 检查是否有未闭合的方括号 '['";
-        }
-    }
-    
-    // 文件结尾错误
-    if (errorMsg.find("文件结尾") != std::string::npos) {
-        return "提示: 文件可能缺少闭合的括号或花括号";
-    }
-    
-    return "";
-}
-
+// 语法错误处理函数（使用error模块）
 void yyerror(const char* s) {
-    // 翻译错误信息为更友好的格式
-    std::string friendlyMsg = translateErrorMessage(s);
-    
-    // 输出文件位置和错误类型
-    std::cerr << ERR_BOLD;
-    if (!g_currentFile.empty()) {
-        std::cerr << g_currentFile << ":";
-    }
-    std::cerr << yylineno << ": " << ERR_RED << "error: " << ERR_RESET;
-    std::cerr << ERR_BOLD << friendlyMsg << ERR_RESET << std::endl;
-    
-    std::cerr << std::endl;
-    
-    // 显示上下文：前2行 + 当前行
-    int startLine = std::max(1, yylineno - 2);
-    for (int i = startLine; i <= yylineno; i++) {
-        std::string line = getSourceLine(i);
-        if (i == yylineno) {
-            // 高亮当前错误行
-            std::cerr << ERR_RED << " >> " << ERR_RESET;
-            std::cerr << ERR_CYAN << std::setw(4) << i << " | " << ERR_RESET;
-            std::cerr << ERR_BOLD << line << ERR_RESET << std::endl;
-            
-            // 显示错误位置指示器
-            std::cerr << "         | " << ERR_RED << "^~~~" << ERR_RESET << std::endl;
-        } else {
-            // 上下文行
-            std::cerr << "    ";
-            std::cerr << ERR_CYAN << std::setw(4) << i << " | " << ERR_RESET;
-            std::cerr << line << std::endl;
-        }
-    }
-    
-    // 生成并显示修复建议
-    std::string hint = generateHint(friendlyMsg, yylineno);
-    if (!hint.empty()) {
-        std::cerr << ERR_CYAN << hint << ERR_RESET << std::endl;
-    }
-    
-    std::cerr << std::endl;
+    reportSyntaxError(s, yylineno, yylloc.first_column);
 }

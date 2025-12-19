@@ -22,9 +22,15 @@
 
 extern int yylineno;  /* 当前行号，由 Flex 自动维护 */
 
-// 定义 YY_USER_ACTION 宏，在每个 token 动作前自动更新位置信息
+// 列号跟踪
+static int yycolumn = 1;
+
+// 定义 YY_USER_ACTION 宏，在每个 token 动作前自动更新位置信息（包括列号）
 #define YY_USER_ACTION \
-    yylloc.first_line = yylloc.last_line = yylineno;
+    yylloc.first_line = yylloc.last_line = yylineno; \
+    yylloc.first_column = yycolumn; \
+    yylloc.last_column = yycolumn + yyleng - 1; \
+    yycolumn += yyleng;
 %}
 
 /* Flex 选项配置 */
@@ -234,7 +240,7 @@ NEWLINE     \n
   * 空白字符处理
   */
 {WHITESPACE}            { /* 忽略空格、制表符、回车 */ }
-{NEWLINE}               { /* 忽略换行，但 yylineno 自动递增 */ }
+{NEWLINE}               { yycolumn = 1; /* 换行时重置列号 */ }
 
   /* 
   * 错误处理

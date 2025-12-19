@@ -1,4 +1,5 @@
 #include "codegen.h"
+#include "error.h"
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -30,10 +31,10 @@ CodeGenerator::CodeGenerator(const std::string &moduleName) {
     context = std::make_unique<llvm::LLVMContext>();
     module = std::make_unique<llvm::Module>(moduleName, *context);
     builder = std::make_unique<llvm::IRBuilder<>>(*context);
-    // 初始化错误管理
-    errorCount = 0;
-    warningCount = 0;
+    // 初始化错误管理（使用全局计数器）
+    resetErrorCounts();
     currentFunction = nullptr;
+    currentFunctionLineNumber = 0;
     // 异常消息全局变量初始化
     currentExceptionMsg = nullptr;  
     // 初始化当前目录为当前工作目录
@@ -49,10 +50,10 @@ CodeGenerator::CodeGenerator(const std::string &moduleName) {
 
 CodeGenerator::~CodeGenerator() {}
 
-// ANSI 转义码定义
-static const char* ANSI_RED = "\033[1;31m";     // Error 时粗体红色
-static const char* ANSI_YELLOW = "\033[1;33m";  // Warning 时粗体黄色
-static const char* ANSI_RESET = "\033[0m";      // 重置颜色
+// 设置源文件路径（供外部调用，使用error模块）
+void setSourceFilePath(const std::string& path) {
+    loadSourceFile(path);
+}
 
 // 安全执行外部命令（避免命令注入攻击）使用 fork/exec 代替 system()，不经过 shell 解释
 static int safeExecuteCommand(const std::vector<std::string>& args, bool verbose = false) {
@@ -72,7 +73,7 @@ static int safeExecuteCommand(const std::vector<std::string>& args, bool verbose
     
     if (pid == -1) {
         // fork 失败
-        std::cerr << "Error: Failed to fork process" << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Failed to fork process" << std::endl;
         return -1;
     }
     
@@ -89,7 +90,7 @@ static int safeExecuteCommand(const std::vector<std::string>& args, bool verbose
         execvp(c_args[0], c_args.data());
         
         // 如果 execvp 返回，说明执行失败
-        std::cerr << "Error: Failed to execute " << args[0] << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Failed to execute " << args[0] << std::endl;
         _exit(127);
     }
     
@@ -126,28 +127,6 @@ static bool isValidFilePath(const std::string& path) {
     return true;
 }
 
-// 错误和警告管理
-void CodeGenerator::reportError(const std::string& message, int line) {
-    if (line > 0) {
-        std::cerr << ANSI_RED << "Error" << ANSI_RESET 
-                  << " at line " << line << ": " << message << std::endl;
-    } else {
-        std::cerr << ANSI_RED << "Error" << ANSI_RESET 
-                  << ": " << message << std::endl;
-    }
-    errorCount++;
-}
-
-void CodeGenerator::reportWarning(const std::string& message, int line) {
-    if (line > 0) {
-        std::cerr << ANSI_YELLOW << "Warning" << ANSI_RESET 
-                  << " at line " << line << ": " << message << std::endl;
-    } else {
-        std::cerr << ANSI_YELLOW << "Warning" << ANSI_RESET 
-                  << ": " << message << std::endl;
-    }
-    warningCount++;
-}
 
 // 临时内存管理
 void CodeGenerator::pushTempMemory(llvm::Value *ptr) {
@@ -292,8 +271,7 @@ bool CodeGenerator::loadModule(const std::string &moduleName) {
     // 查找模块文件
     std::string moduleFile = findModuleFile(moduleName);
     if (moduleFile.empty()) {
-        std::cerr << "Error: Module '" << moduleName << "' not found"
-                  << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Module '" << moduleName << "' not found" << std::endl;
         return false;
     }
 
@@ -304,8 +282,7 @@ bool CodeGenerator::loadModule(const std::string &moduleName) {
     // 打开模块文件
     yyin = fopen(moduleFile.c_str(), "r");
     if (!yyin) {
-        std::cerr << "Error: Cannot open module file: " << moduleFile
-                  << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Cannot open module file: " << moduleFile << std::endl;
         yyin = oldYyin;  // 恢复原始状态
         return false;
     }
@@ -322,8 +299,7 @@ bool CodeGenerator::loadModule(const std::string &moduleName) {
     root = oldRoot;
 
     if (parseResult != 0 || !moduleRoot) {
-        std::cerr << "Error: Failed to parse module: " << moduleName
-                  << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Failed to parse module: " << moduleName << std::endl;
         return false;
     }
 
@@ -423,8 +399,7 @@ void CodeGenerator::codegenImport(ImportNode *node) {
 
     // 加载模块
     if (!loadModule(node->moduleName)) {
-        std::cerr << "Error: Failed to import module: " << node->moduleName
-                  << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Failed to import module: " << node->moduleName << std::endl;
         return;
     }
 
@@ -576,6 +551,15 @@ void CodeGenerator::declareBuiltinFunctions() {
     llvm::Function::Create(freeType, llvm::Function::ExternalLinkage, "free",
                            module.get());
     
+    // pow 函数 (幂运算)
+    std::vector<llvm::Type *> powArgs;
+    powArgs.push_back(llvm::Type::getDoubleTy(*context));
+    powArgs.push_back(llvm::Type::getDoubleTy(*context));
+    llvm::FunctionType *powType = llvm::FunctionType::get(
+        llvm::Type::getDoubleTy(*context), powArgs, false);
+    llvm::Function::Create(powType, llvm::Function::ExternalLinkage, "pow",
+                           module.get());
+    
     // 声明异常处理相关函数
     declareExceptionHandlingFunctions();
 }
@@ -662,7 +646,7 @@ llvm::Value *CodeGenerator::codegenInterpolatedString(InterpolatedStringNode *no
         const auto& expr = node->expressions[i];
         llvm::Value* exprValue = codegenExpr(expr.get());
         if (!exprValue) {
-            std::cerr << "Error: Failed to generate code for expression in interpolated string" << std::endl;
+            std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Failed to generate code for expression in interpolated string" << std::endl;
             return nullptr;
         }
         
@@ -763,6 +747,9 @@ llvm::Value *CodeGenerator::codegenBoolLiteral(BoolLiteralNode *node) {
 
 // 生成标识符引用
 llvm::Value *CodeGenerator::codegenIdentifier(IdentifierNode *node) {
+    // 标记变量已被使用
+    usedVariables.insert(node->name);
+    
     // 先查找局部变量
     llvm::AllocaInst *alloca = namedValues[node->name];
     if (alloca) {
@@ -777,17 +764,13 @@ llvm::Value *CodeGenerator::codegenIdentifier(IdentifierNode *node) {
                                    node->name.c_str());
     }
 
-    if (node->lineNumber > 0) {
-        std::cerr << ANSI_RED << "Error" << ANSI_RESET 
-                  << " at line " << node->lineNumber 
-                  << ": Undefined variable '" << node->name << "'"
-                  << std::endl;
-    } else {
-        std::cerr << ANSI_RED << "Error" << ANSI_RESET 
-                  << ": Undefined variable '" << node->name << "'"
-                  << std::endl;
+    // 检查是否是声明失败的变量（抑制级联错误）
+    if (failedDeclarations.find(node->name) != failedDeclarations.end()) {
+        // 静默返回，不报告重复错误
+        return nullptr;
     }
-    errorCount++;
+
+    reportError("Undefined variable '" + node->name + "'", node->lineNumber);
     return nullptr;
 }
 
@@ -894,6 +877,20 @@ llvm::Value *CodeGenerator::codegenBinaryOp(BinaryOpNode *node) {
 
     // / 运算符: 总是返回浮点数
     if (node->op == "/") {
+        // 编译时静态检查：除数是否为常量0
+        if (auto *constInt = llvm::dyn_cast<llvm::ConstantInt>(right)) {
+            if (constInt->isZero()) {
+                reportError("Division by zero (divisor is constant 0)", node->lineNumber);
+                return nullptr;
+            }
+        }
+        if (auto *constFP = llvm::dyn_cast<llvm::ConstantFP>(right)) {
+            if (constFP->isZero()) {
+                reportError("Division by zero (divisor is constant 0.0)", node->lineNumber);
+                return nullptr;
+            }
+        }
+        
         // 如果操作数不是浮点数,先转换为浮点数
         if (!left->getType()->isDoubleTy()) {
             left = builder->CreateSIToFP(
@@ -904,12 +901,26 @@ llvm::Value *CodeGenerator::codegenBinaryOp(BinaryOpNode *node) {
                 right, llvm::Type::getDoubleTy(*context), "conv_right");
         }
 
-        // 使用辅助函数进行除零检查
+        // 使用辅助函数进行运行时除零检查
         return createDivisionWithZeroCheck(left, right, "Runtime Error: Division by zero\n", false);
     }
 
     // // 运算符: 整除,总是返回整数
     if (node->op == "//") {
+        // 编译时静态检查：除数是否为常量0
+        if (auto *constInt = llvm::dyn_cast<llvm::ConstantInt>(right)) {
+            if (constInt->isZero()) {
+                reportError("Integer division by zero (divisor is constant 0)", node->lineNumber);
+                return nullptr;
+            }
+        }
+        if (auto *constFP = llvm::dyn_cast<llvm::ConstantFP>(right)) {
+            if (constFP->isZero()) {
+                reportError("Integer division by zero (divisor is constant 0.0)", node->lineNumber);
+                return nullptr;
+            }
+        }
+        
         // 如果操作数是浮点数,先转换为整数
         if (left->getType()->isDoubleTy()) {
             left = builder->CreateFPToSI(left, llvm::Type::getInt32Ty(*context),
@@ -925,7 +936,14 @@ llvm::Value *CodeGenerator::codegenBinaryOp(BinaryOpNode *node) {
     }
 
     if (node->op == "%") {
-        // 使用辅助函数进行除零检查
+        // 编译时静态检查：除数是否为常量0
+        if (auto *constInt = llvm::dyn_cast<llvm::ConstantInt>(right)) {
+            if (constInt->isZero()) {
+                reportError("Modulo by zero (divisor is constant 0)", node->lineNumber);
+                return nullptr;
+            }
+        }
+        // 使用辅助函数进行运行时除零检查
         return createModuloWithZeroCheck(left, right, "Runtime Error: Modulo by zero\n");
     }
     if (node->op == "==")
@@ -1081,8 +1099,7 @@ llvm::Value *CodeGenerator::codegenLogicalOp(BinaryOpNode *node) {
 llvm::Value *CodeGenerator::codegenUnaryOp(UnaryOpNode *node) {
     llvm::Value *operand = codegenExpr(node->operand.get());
     if (!operand) {
-        std::cerr << "Error: Invalid operand for unary operator '" << node->op
-                  << "'" << std::endl;
+        reportError("Invalid operand for unary operator '" + node->op + "'", node->lineNumber);
         return nullptr;
     }
 
@@ -1094,8 +1111,7 @@ llvm::Value *CodeGenerator::codegenUnaryOp(UnaryOpNode *node) {
     if (node->op == "!")
         return builder->CreateNot(operand, "nottmp");
 
-    std::cerr << "Error: Unknown unary operator '" << node->op << "'"
-              << std::endl;
+    reportError("Unknown unary operator '" + node->op + "'", node->lineNumber);
     return nullptr;
 }
 
@@ -1152,8 +1168,7 @@ llvm::Value *CodeGenerator::codegenFunctionCall(FunctionCallNode *node) {
                 }
                 return builder->CreateCall(moduleFunc, args, "module_call");
             } else {
-                std::cerr << "Error: Function '" << node->functionName 
-                          << "' not found in module '" << moduleName << "'" << std::endl;
+                reportError("Function '" + node->functionName + "' not found in module '" + moduleName + "'", node->lineNumber);
                 return nullptr;
             }
         }
@@ -1501,7 +1516,7 @@ llvm::Value *CodeGenerator::codegenFunctionCall(FunctionCallNode *node) {
     // free() 函数 - 释放malloc分配的内存
     if (node->functionName == "free") {
         if (node->arguments.empty()) {
-            std::cerr << "Error: free() requires one argument" << std::endl;
+            reportError("free() requires one argument", node->lineNumber);
             return nullptr;
         }
 
@@ -1511,8 +1526,7 @@ llvm::Value *CodeGenerator::codegenFunctionCall(FunctionCallNode *node) {
 
         // 检查参数是否为指针类型
         if (!ptr->getType()->isPointerTy()) {
-            std::cerr << "Error: free() argument must be a pointer (string)"
-                      << std::endl;
+            reportError("free() argument must be a pointer (string)", node->lineNumber);
             return nullptr;
         }
 
@@ -1524,10 +1538,44 @@ llvm::Value *CodeGenerator::codegenFunctionCall(FunctionCallNode *node) {
         return llvm::ConstantInt::get(llvm::Type::getInt32Ty(*context), 0);
     }
 
+    // pow() 函数 - 幂运算
+    if (node->functionName == "pow") {
+        if (node->arguments.size() != 2) {
+            reportError("pow() requires exactly 2 arguments (base, exponent)", node->lineNumber);
+            return nullptr;
+        }
+
+        llvm::Value *base = codegenExpr(node->arguments[0].get());
+        llvm::Value *exp = codegenExpr(node->arguments[1].get());
+        if (!base || !exp)
+            return nullptr;
+
+        // 将参数转换为 double 类型
+        if (!base->getType()->isDoubleTy()) {
+            if (base->getType()->isIntegerTy()) {
+                base = builder->CreateSIToFP(base, llvm::Type::getDoubleTy(*context), "base_conv");
+            } else {
+                reportError("pow() base must be numeric type", node->lineNumber);
+                return nullptr;
+            }
+        }
+        if (!exp->getType()->isDoubleTy()) {
+            if (exp->getType()->isIntegerTy()) {
+                exp = builder->CreateSIToFP(exp, llvm::Type::getDoubleTy(*context), "exp_conv");
+            } else {
+                reportError("pow() exponent must be numeric type", node->lineNumber);
+                return nullptr;
+            }
+        }
+
+        // 调用 C 标准库的 pow 函数
+        llvm::Function *powFunc = module->getFunction("pow");
+        return builder->CreateCall(powFunc, {base, exp}, "pow_result");
+    }
+
     llvm::Function *calleeFunc = module->getFunction(node->functionName);
     if (!calleeFunc) {
-        std::cerr << "Error: Unknown function '" << node->functionName << "'"
-                  << std::endl;
+        reportError("Undefined function '" + node->functionName + "'", node->lineNumber);
         return nullptr;
     }
 
@@ -1535,17 +1583,19 @@ llvm::Value *CodeGenerator::codegenFunctionCall(FunctionCallNode *node) {
     if (!calleeFunc->isVarArg()) {
         // 普通函数：参数数量必须完全匹配
         if (calleeFunc->arg_size() != node->arguments.size()) {
-            std::cerr << "Error: Function '" << node->functionName << "' expects "
-                      << calleeFunc->arg_size() << " arguments but got "
-                      << node->arguments.size() << std::endl;
+            std::string msg = "Function '" + node->functionName + "' expects " +
+                              std::to_string(calleeFunc->arg_size()) + " argument(s) but got " +
+                              std::to_string(node->arguments.size());
+            reportError(msg, node->lineNumber);
             return nullptr;
         }
     } else {
         // 可变参数函数：至少要有固定参数数量
         if (node->arguments.size() < calleeFunc->arg_size()) {
-            std::cerr << "Error: Variadic function '" << node->functionName 
-                      << "' expects at least " << calleeFunc->arg_size() 
-                      << " arguments but got " << node->arguments.size() << std::endl;
+            std::string msg = "Variadic function '" + node->functionName + "' expects at least " +
+                              std::to_string(calleeFunc->arg_size()) + " argument(s) but got " +
+                              std::to_string(node->arguments.size());
+            reportError(msg, node->lineNumber);
             return nullptr;
         }
     }
@@ -1605,22 +1655,15 @@ llvm::Value *CodeGenerator::codegenFunctionCall(FunctionCallNode *node) {
 
         // 检查并转换类型
         if (argVal->getType() != expectedType) {
-            llvm::Value* originalArgVal = argVal;
-            
             // 使用统一的类型转换函数
             argVal = convertToType(argVal, expectedType);
             
             // 检查转换是否成功（类型是否匹配）
             if (argVal->getType() != expectedType && 
                 !(expectedType->isPointerTy() && argVal->getType()->isPointerTy())) {
-                std::cerr << "Error: Type mismatch for argument " << idx
-                          << " in function '" << node->functionName << "'"
-                          << std::endl;
-                std::cerr << "  Expected: ";
-                expectedType->print(llvm::errs());
-                std::cerr << ", Got: ";
-                originalArgVal->getType()->print(llvm::errs());
-                std::cerr << std::endl;
+                std::string msg = "Type mismatch for argument " + std::to_string(idx) + 
+                                  " in function '" + node->functionName + "'";
+                reportError(msg, node->lineNumber);
                 return nullptr;
             }
         }
@@ -1642,6 +1685,12 @@ llvm::Value *CodeGenerator::codegenArrayAccess(ArrayAccessNode *node) {
     if (!index) {
         return nullptr;
     }
+    
+    // 检查索引类型必须是整数
+    if (!index->getType()->isIntegerTy()) {
+        reportError("Array index must be integer type", node->lineNumber);
+        return nullptr;
+    }
 
     // 获取数组变量或子数组
     llvm::Value *arrayPtr = nullptr;
@@ -1653,9 +1702,14 @@ llvm::Value *CodeGenerator::codegenArrayAccess(ArrayAccessNode *node) {
         // 直接访问变量
         std::string arrayVarName = identNode->name;
         
+        // 检查是否是声明失败的变量（抑制级联错误）
+        if (failedDeclarations.find(arrayVarName) != failedDeclarations.end()) {
+            return nullptr;  // 静默返回，不报告重复错误
+        }
+        
         auto it = namedValues.find(arrayVarName);
         if (it == namedValues.end()) {
-            std::cerr << "Error: Undefined array variable '" << arrayVarName << "'" << std::endl;
+            reportError("Undefined array variable '" + arrayVarName + "'", node->lineNumber);
             return nullptr;
         }
         
@@ -1678,7 +1732,7 @@ llvm::Value *CodeGenerator::codegenArrayAccess(ArrayAccessNode *node) {
                 elementType = llvm::Type::getInt8Ty(*context);
             }
         } else {
-            std::cerr << "Error: Not an array variable" << std::endl;
+            reportError("Not an array variable", node->lineNumber);
             return nullptr;
         }
     } else if (dynamic_cast<ArrayAccessNode*>(node->array.get())) {
@@ -1700,7 +1754,7 @@ llvm::Value *CodeGenerator::codegenArrayAccess(ArrayAccessNode *node) {
                 baseVarName = ident->name;
                 break;
             } else {
-                std::cerr << "Error: Unsupported nested array access" << std::endl;
+                reportError("Unsupported nested array access", node->lineNumber);
                 return nullptr;
             }
         }
@@ -1708,7 +1762,7 @@ llvm::Value *CodeGenerator::codegenArrayAccess(ArrayAccessNode *node) {
         // 获取基础数组
         auto it = namedValues.find(baseVarName);
         if (it == namedValues.end()) {
-            std::cerr << "Error: Undefined array variable '" << baseVarName << "'" << std::endl;
+            reportError("Undefined array variable '" + baseVarName + "'", node->lineNumber);
             return nullptr;
         }
         
@@ -1718,7 +1772,7 @@ llvm::Value *CodeGenerator::codegenArrayAccess(ArrayAccessNode *node) {
         if (auto allocaInst = llvm::dyn_cast<llvm::AllocaInst>(basePtr)) {
             currentType = allocaInst->getAllocatedType();
         } else {
-            std::cerr << "Error: Not an array variable" << std::endl;
+            reportError("Not an array variable", node->lineNumber);
             return nullptr;
         }
         
@@ -1726,7 +1780,7 @@ llvm::Value *CodeGenerator::codegenArrayAccess(ArrayAccessNode *node) {
         llvm::Value *currentPtr = basePtr;
         for (size_t i = 0; i < allIndices.size() - 1; i++) {
             if (!currentType->isArrayTy()) {
-                std::cerr << "Error: Dimension mismatch in array access" << std::endl;
+                reportError("Dimension mismatch in array access", node->lineNumber);
                 return nullptr;
             }
             
@@ -1754,7 +1808,7 @@ llvm::Value *CodeGenerator::codegenArrayAccess(ArrayAccessNode *node) {
         index = allIndices.back();
         isFromVariable = false;
     } else {
-        std::cerr << "Error: Unsupported array access pattern" << std::endl;
+        reportError("Unsupported array access pattern", node->lineNumber);
         return nullptr;
     }
     
@@ -1905,8 +1959,7 @@ llvm::Value *CodeGenerator::codegenMemberAccess(MemberAccessNode *node) {
 
     // 获取对象表达式
     if (!node->object) {
-        std::cerr << "Error: Member access without object" << std::endl;
-        errorCount++;
+        reportError("Member access without object", node->lineNumber);
         return nullptr;
     }
 
@@ -1943,35 +1996,25 @@ llvm::Value *CodeGenerator::codegenMemberAccess(MemberAccessNode *node) {
         auto varIt = namedValues.find(objectName);
         if (varIt != namedValues.end()) {
             // 变量存在，但PiPiXia目前不支持结构体/类
-            std::cerr << "Error: Member access on object '" << objectName 
-                      << "' is not supported. PiPiXia currently does not support "
-                      << "structures or classes." << std::endl;
-            std::cerr << "Note: Only module member access (e.g., module.function()) "
-                      << "is currently supported." << std::endl;
-            errorCount++;
+            reportError("Member access on object '" + objectName + "' is not supported. PiPiXia currently does not support structures or classes", node->lineNumber);
             return nullptr;
         }
         
         // 变量不存在
-        std::cerr << "Error: Undefined variable or module '" << objectName << "'" << std::endl;
-        errorCount++;
+        reportError("Undefined variable or module '" + objectName + "'", node->lineNumber);
         return nullptr;
     }
     
     // 对于复杂表达式的成员访问（如 func().member 或 array[0].member）
     // 当前不支持，因为没有结构体系统
-    std::cerr << "Error: Member access on complex expressions is not supported. "
-              << "PiPiXia currently does not support structures or classes." << std::endl;
-    std::cerr << "Note: Only module member access (e.g., module.function() or module.variable) "
-              << "is currently supported." << std::endl;
-    errorCount++;
+    reportError("Member access on complex expressions is not supported. PiPiXia currently does not support structures or classes", node->lineNumber);
     return nullptr;
 }
 
 // 表达式代码生成 - 分发器
 llvm::Value *CodeGenerator::codegenExpr(ExprNode *node) {
     if (!node) {
-        std::cerr << "Error: Null expression node" << std::endl;
+        reportError("Null expression node", 0);
         return nullptr;
     }
 
@@ -2002,7 +2045,7 @@ llvm::Value *CodeGenerator::codegenExpr(ExprNode *node) {
     if (auto memberAccess = dynamic_cast<MemberAccessNode *>(node))
         return codegenMemberAccess(memberAccess);
 
-    std::cerr << "Error: Unknown expression node type" << std::endl;
+    reportError("Unknown expression node type", 0);
     return nullptr;
 }
 
@@ -2040,7 +2083,7 @@ llvm::Value *CodeGenerator::codegenArrayLiteral(ArrayLiteralNode *node) {
         // 我们需要重建完整的子数组类型
         llvm::Value *firstSubElem = codegenExpr(firstSubArray->elements[0].get());
         if (!firstSubElem) {
-            std::cerr << "Error: Failed to generate code for first sub-array element" << std::endl;
+            reportError("Failed to generate code for first sub-array element", node->lineNumber);
             return nullptr;
         }
         llvm::Type *firstSubElemType = firstSubElem->getType();
@@ -2058,7 +2101,7 @@ llvm::Value *CodeGenerator::codegenArrayLiteral(ArrayLiteralNode *node) {
         for (size_t i = 0; i < outerSize; i++) {
             auto subArrayNode = dynamic_cast<ArrayLiteralNode*>(node->elements[i].get());
             if (!subArrayNode) {
-                std::cerr << "Error: Inconsistent array dimensions" << std::endl;
+                reportError("Inconsistent array dimensions", node->lineNumber);
                 return nullptr;
             }
             
@@ -2131,7 +2174,7 @@ void CodeGenerator::codegenVarDecl(VarDeclNode *node) {
         // 数组类型（一维或多维）
         llvm::Type *baseType = getType(node->type->typeName);
         if (!baseType) {
-            std::cerr << "Error: Unknown type '" << node->type->typeName << "'" << std::endl;
+            reportError("Unknown type '" + node->type->typeName + "'", node->lineNumber);
             return;
         }
         
@@ -2146,7 +2189,7 @@ void CodeGenerator::codegenVarDecl(VarDeclNode *node) {
         // 普通类型
         type = getType(node->type->typeName);
         if (!type) {
-            std::cerr << "Error: Unknown type '" << node->type->typeName << "'" << std::endl;
+            reportError("Unknown type '" + node->type->typeName + "'", node->lineNumber);
             return;
         }
     }
@@ -2155,8 +2198,7 @@ void CodeGenerator::codegenVarDecl(VarDeclNode *node) {
     if (!currentFunction) {
         // 检查全局变量是否已定义
         if (globalValues.find(node->name) != globalValues.end()) {
-            std::cerr << "Error: Global variable '" << node->name
-                      << "' is already defined" << std::endl;
+            reportError("Global variable '" + node->name + "' is already defined", node->lineNumber);
             return;
         }
 
@@ -2339,9 +2381,13 @@ void CodeGenerator::codegenVarDecl(VarDeclNode *node) {
 
     // 检查局部变量是否已定义
     if (namedValues.find(node->name) != namedValues.end()) {
-        std::cerr << "Error: Local variable '" << node->name
-                  << "' is already defined in this scope" << std::endl;
+        reportError("Local variable '" + node->name + "' is already defined in this scope", node->lineNumber);
         return;
+    }
+    
+    // 检查是否遮蔽全局变量（-Wshadow）
+    if (g_enableShadowWarnings && globalValues.find(node->name) != globalValues.end()) {
+        reportWarning("Local variable '" + node->name + "' shadows a global variable", node->lineNumber);
     }
 
     // 局部变量：创建 alloca
@@ -2353,6 +2399,18 @@ void CodeGenerator::codegenVarDecl(VarDeclNode *node) {
             // 数组字面量初始化（支持多维）
             auto arrayLit = dynamic_cast<ArrayLiteralNode*>(node->initializer.get());
             llvm::ArrayType *arrType = llvm::cast<llvm::ArrayType>(type);
+            
+            // 检查数组大小是否匹配
+            size_t declaredSize = arrType->getNumElements();
+            size_t actualSize = arrayLit->elements.size();
+            if (actualSize > declaredSize) {
+                std::string msg = "Array size mismatch: declared size is " + std::to_string(declaredSize) +
+                                  " but initializer has " + std::to_string(actualSize) + " elements";
+                reportError(msg, node->lineNumber);
+                // 记录声明失败的变量，抑制后续的"未定义变量"级联错误
+                failedDeclarations.insert(node->name);
+                return;
+            }
             
             // 检查是否是嵌套数组
             bool isNested = !arrayLit->elements.empty() && 
@@ -2407,6 +2465,35 @@ void CodeGenerator::codegenVarDecl(VarDeclNode *node) {
             // 普通变量初始化
             llvm::Value *initVal = codegenExpr(node->initializer.get());
             if (initVal) {
+                // 编译时类型检查：检测类型不匹配错误
+                bool typeError = false;
+                std::string declaredTypeName = node->type->typeName;
+                llvm::Type *initType = initVal->getType();
+                
+                // 检查字符串赋值给非字符串类型
+                if (initType->isPointerTy() && !type->isPointerTy()) {
+                    // 字符串（指针）赋值给整数/浮点等
+                    reportError("Type mismatch: cannot assign string to '" + declaredTypeName + "'", node->lineNumber);
+                    typeError = true;
+                }
+                // 检查整数赋值给字符串类型
+                else if (!initType->isPointerTy() && type->isPointerTy() && declaredTypeName == "string") {
+                    std::string initTypeName = initType->isIntegerTy() ? "int" : 
+                                               initType->isDoubleTy() ? "float" : "unknown";
+                    reportError("Type mismatch: cannot assign " + initTypeName + " to 'string'", node->lineNumber);
+                    typeError = true;
+                }
+                // 检查浮点赋值给整数（精度丢失警告）
+                else if (initType->isDoubleTy() && type->isIntegerTy()) {
+                    reportWarning("Implicit conversion from 'float' to '" + declaredTypeName + "' may lose precision", node->lineNumber);
+                }
+                
+                if (typeError) {
+                    // 记录声明失败的变量，抑制后续的"未定义变量"错误
+                    failedDeclarations.insert(node->name);
+                    return;
+                }
+                
                 if (initVal->getType() != type) {
                     initVal = convertToType(initVal, type);
                 }
@@ -2427,6 +2514,14 @@ void CodeGenerator::codegenVarDecl(VarDeclNode *node) {
     }
 
     namedValues[node->name] = alloca;
+    
+    // 跟踪局部常量变量
+    if (node->isConst) {
+        localConstVariables.insert(node->name);
+    }
+    
+    // 记录变量声明（用于未使用变量警告）
+    declaredVariables[node->name] = node->lineNumber;
 
     // 保存变量类型信息（用于数组访问）
     if (node->type) {
@@ -2448,7 +2543,7 @@ void CodeGenerator::codegenAssignment(AssignmentNode *node) {
         // 处理数组元素赋值: arr[index] = value
         llvm::Value *index = codegenExpr(arrayAccess->index.get());
         if (!index) {
-            std::cerr << "Error: Invalid index in array assignment" << std::endl;
+            reportError("Invalid index in array assignment", node->lineNumber);
             return;
         }
 
@@ -2463,7 +2558,7 @@ void CodeGenerator::codegenAssignment(AssignmentNode *node) {
             // 从符号表中查找
             auto it = namedValues.find(arrayVarName);
             if (it == namedValues.end()) {
-                std::cerr << "Error: Undefined array variable '" << arrayVarName << "'" << std::endl;
+                reportError("Undefined array variable '" + arrayVarName + "'", node->lineNumber);
                 return;
             }
             
@@ -2487,18 +2582,18 @@ void CodeGenerator::codegenAssignment(AssignmentNode *node) {
                     elementType = llvm::Type::getInt8Ty(*context);
                 }
             } else {
-                std::cerr << "Error: Not an array variable" << std::endl;
+                reportError("Not an array variable", node->lineNumber);
                 return;
             }
         } else {
-            std::cerr << "Error: Array assignment target must be a variable" << std::endl;
+            reportError("Array assignment target must be a variable", node->lineNumber);
             return;
         }
 
         // 计算赋值表达式的值
         llvm::Value *value = codegenExpr(node->value.get());
         if (!value) {
-            std::cerr << "Error: Invalid assignment value for array element" << std::endl;
+            reportError("Invalid assignment value for array element", node->lineNumber);
             return;
         }
 
@@ -2582,29 +2677,37 @@ void CodeGenerator::codegenAssignment(AssignmentNode *node) {
     // 处理普通变量赋值
     auto ident = dynamic_cast<IdentifierNode *>(node->target.get());
     if (!ident) {
-        std::cerr << "Error: Assignment target must be a variable identifier "
-                     "or array element"
-                  << std::endl;
+        reportError("Assignment target must be a variable identifier or array element", node->lineNumber);
         return;
     }
 
     // 先检查局部变量
     llvm::AllocaInst *alloca = namedValues[ident->name];
+    
+    // 检查是否是局部常量（不允许重新赋值）
+    if (alloca && localConstVariables.find(ident->name) != localConstVariables.end()) {
+        reportError("Cannot reassign constant '" + ident->name + "'", node->lineNumber);
+        return;
+    }
 
     // 如果不是局部变量，检查全局变量
     if (!alloca) {
         llvm::GlobalVariable *globalVar = globalValues[ident->name];
         if (!globalVar) {
-            std::cerr << "Error: Undefined variable '" << ident->name << "'"
-                      << std::endl;
+            reportError("Undefined variable '" + ident->name + "'", ident->lineNumber);
+            return;
+        }
+        
+        // 检查是否是常量（不允许重新赋值）
+        if (globalVar->isConstant()) {
+            reportError("Cannot reassign constant '" + ident->name + "'", node->lineNumber);
             return;
         }
 
         // 处理全局变量赋值
         llvm::Value *value = codegenExpr(node->value.get());
         if (!value) {
-            std::cerr << "Error: Invalid assignment value for variable '"
-                      << ident->name << "'" << std::endl;
+            reportError("Invalid assignment value for variable '" + ident->name + "'", node->lineNumber);
             return;
         }
 
@@ -2848,8 +2951,7 @@ void CodeGenerator::codegenAssignment(AssignmentNode *node) {
     // 处理局部变量赋值
     llvm::Value *value = codegenExpr(node->value.get());
     if (!value) {
-        std::cerr << "Error: Invalid assignment value for variable '"
-                  << ident->name << "'" << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Invalid assignment value for variable '" << ident->name << "'" << std::endl;
         return;
     }
 
@@ -3093,8 +3195,29 @@ void CodeGenerator::codegenBlock(BlockNode *node) {
         std::cout << "[IR Gen] Block" << std::endl;
     }
 
+    bool hasTerminator = false;
     for (auto &stmt : node->statements) {
+        // 检查是否已有终止符（return/break/continue后的代码是死代码）
+        if (hasTerminator) {
+            // 获取语句行号
+            int lineNum = 0;
+            if (auto retStmt = dynamic_cast<ReturnStmtNode*>(stmt.get())) {
+                lineNum = retStmt->lineNumber;
+            } else if (auto varDecl = dynamic_cast<VarDeclNode*>(stmt.get())) {
+                lineNum = varDecl->lineNumber;
+            } else if (auto exprStmt = dynamic_cast<ExprStmtNode*>(stmt.get())) {
+                lineNum = exprStmt->lineNumber;
+            }
+            reportWarning("Unreachable code detected", lineNum);
+            break;  // 不继续处理死代码
+        }
+        
         codegenStmt(stmt.get());
+        
+        // 检查当前块是否已有终止符
+        if (builder->GetInsertBlock()->getTerminator()) {
+            hasTerminator = true;
+        }
     }
     
     // 清理代码块中产生的临时内存
@@ -3232,11 +3355,9 @@ void CodeGenerator::codegenForStmt(ForStmtNode *node) {
 
     llvm::Function *function = builder->GetInsertBlock()->getParent();
 
-    // 检查循环变量名是否与已存在的局部变量冲突
-    if (namedValues.find(node->variable) != namedValues.end()) {
-        std::cerr << "Error: For loop variable '" << node->variable
-                  << "' shadows an existing local variable" << std::endl;
-        return;
+    // 检查循环变量名是否与已存在的局部变量冲突（警告而非错误）
+    if (g_enableShadowWarnings && namedValues.find(node->variable) != namedValues.end()) {
+        reportWarning("For loop variable '" + node->variable + "' shadows an existing local variable", node->lineNumber);
     }
 
     llvm::AllocaInst *loopVar = createEntryBlockAlloca(
@@ -3322,7 +3443,7 @@ void CodeGenerator::codegenReturnStmt(ReturnStmtNode *node) {
     if (node->value) {
         llvm::Value *retVal = codegenExpr(node->value.get());
         if (!retVal) {
-            std::cerr << "Error: Invalid return value" << std::endl;
+            reportError("Invalid return value", node->lineNumber);
             return;
         }
 
@@ -3333,18 +3454,15 @@ void CodeGenerator::codegenReturnStmt(ReturnStmtNode *node) {
         if (retVal->getType() != expectedRetType) {
             // 尝试类型转换
             if (expectedRetType->isVoidTy()) {
-                std::cerr << "Error: Cannot return a value from void function"
-                          << std::endl;
+                // 指向函数声明行，提示需要添加返回类型
+                reportError("Cannot return a value from void function '" + 
+                           currentFunction->getName().str() + "'", currentFunctionLineNumber);
                 return;
             }
 
             llvm::Value *converted = convertToType(retVal, expectedRetType);
             if (converted->getType() != expectedRetType) {
-                std::cerr << "Warning: Return type mismatch, expected ";
-                expectedRetType->print(llvm::errs());
-                std::cerr << ", got ";
-                retVal->getType()->print(llvm::errs());
-                std::cerr << std::endl;
+                reportWarning("Return type mismatch in function", node->lineNumber);
             }
             retVal = converted;
         }
@@ -3388,8 +3506,7 @@ void CodeGenerator::codegenFunctionDecl(FunctionDeclNode *node) {
 
     // 检查函数是否已定义
     if (module->getFunction(node->name)) {
-        std::cerr << "Error: Function '" << node->name << "' is already defined"
-                  << std::endl;
+        reportError("Function '" + node->name + "' is already defined", node->lineNumber);
         return;
     }
 
@@ -3425,21 +3542,34 @@ void CodeGenerator::codegenFunctionDecl(FunctionDeclNode *node) {
     builder->SetInsertPoint(entryBB);
 
     llvm::Function *prevFunction = currentFunction;
+    int prevFunctionLineNumber = currentFunctionLineNumber;
     currentFunction = function;
+    currentFunctionLineNumber = node->lineNumber;  // 存储函数声明行号
     namedValues.clear();
     variableTypes.clear(); // 清理类型信息，避免函数间类型污染
 
     // 为每个参数创建alloca并存储参数值
+    std::vector<std::pair<std::string, int>> functionParams;  // 参数名和行号
     for (auto &arg : function->args()) {
         llvm::Type *allocaType = arg.getType();
         
         // 对于数组参数（传递为指针），直接使用指针类型的alloca
         // 不需要特殊处理，因为指针已经可以用于数组访问
         
+        std::string paramName = std::string(arg.getName());
+        
+        // 检查参数是否遮蔽全局变量（-Wshadow）
+        if (g_enableShadowWarnings && globalValues.find(paramName) != globalValues.end()) {
+            reportWarning("Parameter '" + paramName + "' shadows a global variable", node->lineNumber);
+        }
+        
         llvm::AllocaInst *alloca = createEntryBlockAlloca(
-            function, std::string(arg.getName()), allocaType);
+            function, paramName, allocaType);
         builder->CreateStore(&arg, alloca);
-        namedValues[std::string(arg.getName())] = alloca;
+        namedValues[paramName] = alloca;
+        
+        // 记录参数用于未使用参数检查
+        functionParams.push_back({paramName, node->lineNumber});
     }
 
     if (node->body) {
@@ -3448,19 +3578,44 @@ void CodeGenerator::codegenFunctionDecl(FunctionDeclNode *node) {
 
     // 在函数结束前清理临时内存
     // 如果函数没有显式 return 语句，需要在这里清理临时内存
-    if (!builder->GetInsertBlock()->getTerminator()) {
+    bool hasExplicitReturn = builder->GetInsertBlock()->getTerminator() != nullptr;
+    if (!hasExplicitReturn) {
         // 清理函数体执行过程中产生的临时内存
         clearTempMemory();
         
         if (retType->isVoidTy()) {
             builder->CreateRetVoid();
         } else {
+            // 非void函数缺少return语句，报告警告
+            reportWarning("Control reaches end of non-void function '" + node->name + "'", node->lineNumber);
             builder->CreateRet(llvm::Constant::getNullValue(retType));
         }
     }
 
     llvm::verifyFunction(*function, &llvm::errs());
+    
+    // 检查未使用的变量（在函数结束时）
+    for (const auto& decl : declaredVariables) {
+        if (usedVariables.find(decl.first) == usedVariables.end()) {
+            reportWarning("Unused variable '" + decl.first + "'", decl.second);
+        }
+    }
+    
+    // 检查未使用的参数
+    for (const auto& param : functionParams) {
+        if (usedVariables.find(param.first) == usedVariables.end()) {
+            reportWarning("Unused parameter '" + param.first + "'", param.second);
+        }
+    }
+    
+    // 清理函数级别的跟踪数据
+    declaredVariables.clear();
+    usedVariables.clear();
+    localConstVariables.clear();
+    failedDeclarations.clear();
+    
     currentFunction = prevFunction;
+    currentFunctionLineNumber = prevFunctionLineNumber;  // 恢复之前函数的行号
     functions[node->name] = function;
 }
 
@@ -3496,7 +3651,7 @@ void CodeGenerator::codegenStmt(StmtNode *node) {
     else if (auto importStmt = dynamic_cast<ImportNode *>(node))
         codegenImport(importStmt);
     else {
-        std::cerr << "Error: Unknown statement type" << std::endl;
+        reportError("Unknown statement type", 0);
     }
 }
 
@@ -3631,7 +3786,7 @@ llvm::Value *CodeGenerator::convertToString(llvm::Value *value) {
     // 分配缓冲区用于存储结果字符串 (64 字节足够)
     llvm::Function *mallocFunc = module->getFunction("malloc");
     if (!mallocFunc) {
-        std::cerr << "Error: malloc function not found" << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": malloc function not found" << std::endl;
         return nullptr;
     }
     
@@ -3642,7 +3797,7 @@ llvm::Value *CodeGenerator::convertToString(llvm::Value *value) {
 
     llvm::Function *sprintfFunc = module->getFunction("sprintf");
     if (!sprintfFunc) {
-        std::cerr << "Error: sprintf function not found" << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": sprintf function not found" << std::endl;
         return nullptr;
     }
 
@@ -3949,20 +4104,27 @@ bool CodeGenerator::generate(ProgramNode *root) {
     
     // 创建全局构造函数（如果有需要动态初始化的全局变量）
     createGlobalConstructor();
+    
+    // 检查是否存在main函数
+    if (!module->getFunction("main")) {
+        // 使用文件最后一行作为错误位置，便于显示代码上下文
+        int lastLine = static_cast<int>(g_sourceLines.size());
+        reportError("No 'main' function defined - program needs an entry point", lastLine > 0 ? lastLine : 1);
+    }
 
     // 检查是否有编译错误
     if (hasErrors()) {
-        std::cerr << "\nLLVM IR generation failed with " << errorCount << " error(s)";
-        if (warningCount > 0) {
-            std::cerr << " and " << warningCount << " warning(s)";
+        std::cerr << "\nLLVM IR generation failed with " << g_errorCount << " error(s)";
+        if (g_warningCount > 0) {
+            std::cerr << " and " << g_warningCount << " warning(s)";
         }
         std::cerr << std::endl;
         return false;
     }
 
     // 显示警告统计（如果有）
-    if (warningCount > 0) {
-        std::cerr << "LLVM IR generated with " << warningCount << " warning(s)" << std::endl;
+    if (g_warningCount > 0) {
+        std::cerr << "LLVM IR generated with " << g_warningCount << " warning(s)" << std::endl;
     }
 
     std::string errorStr;
@@ -4012,7 +4174,7 @@ bool CodeGenerator::compileToObjectFile(const std::string &filename) {
     auto target = llvm::TargetRegistry::lookupTarget(targetTriple.str(), error);
     
     if (!target) {
-        std::cerr << "Error: Failed to lookup target: " << error << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Failed to lookup target: " << error << std::endl;
         return false;
     }
     
@@ -4025,7 +4187,7 @@ bool CodeGenerator::compileToObjectFile(const std::string &filename) {
         targetTriple, CPU, features, opt, relocModel);
     
     if (!targetMachine) {
-        std::cerr << "Error: Failed to create target machine" << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Failed to create target machine" << std::endl;
         return false;
     }
     
@@ -4037,8 +4199,7 @@ bool CodeGenerator::compileToObjectFile(const std::string &filename) {
     llvm::raw_fd_ostream dest(filename, EC, llvm::sys::fs::OF_None);
     
     if (EC) {
-        std::cerr << "Error: Could not open file '" << filename 
-                  << "': " << EC.message() << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Could not open file '" << filename << "': " << EC.message() << std::endl;
         return false;
     }
     
@@ -4047,8 +4208,7 @@ bool CodeGenerator::compileToObjectFile(const std::string &filename) {
     auto fileType = llvm::CodeGenFileType::ObjectFile;
     
     if (targetMachine->addPassesToEmitFile(pass, dest, nullptr, fileType)) {
-        std::cerr << "Error: TargetMachine can't emit a file of this type" 
-                  << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": TargetMachine can't emit a file of this type" << std::endl;
         return false;
     }
     
@@ -4066,14 +4226,14 @@ bool CodeGenerator::compileToObjectFile(const std::string &filename) {
 bool CodeGenerator::compileToExecutable(const std::string &filename) {
     // 安全检查：验证文件名不包含危险字符
     if (!isValidFilePath(filename)) {
-        std::cerr << "Error: Invalid output filename (contains unsafe characters)" << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Invalid output filename (contains unsafe characters)" << std::endl;
         return false;
     }
     
     // 1. 先生成 LLVM IR 文件
     std::string llFilename = filename + ".ll";
     if (!writeIRToFile(llFilename)) {
-        std::cerr << "Error: Failed to write LLVM IR file" << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Failed to write LLVM IR file" << std::endl;
         return false;
     }
 
@@ -4095,8 +4255,7 @@ bool CodeGenerator::compileToExecutable(const std::string &filename) {
     int result = safeExecuteCommand(args, g_verbose);
 
     if (result != 0) {
-        std::cerr << "Error: Failed to compile to executable (clang exit code: "
-                  << result << ")" << std::endl;
+        std::cerr << ErrorColors::RED << "Error" << ErrorColors::RESET << ": Failed to compile to executable (clang exit code: " << result << ")" << std::endl;
         return false;
     }
 
@@ -4168,7 +4327,7 @@ void CodeGenerator::codegenTryCatch(TryCatchNode *node) {
     llvm::Function *longjmpFunc = getLongjmpFunction();
     
     if (!setjmpFunc || !longjmpFunc) {
-        std::cerr << "Error: 异常处理函数不可用" << std::endl;
+        reportError("异常处理函数不可用", node->lineNumber);
         return;
     }
     
@@ -4350,7 +4509,7 @@ void CodeGenerator::codegenBreakStmt(BreakStmtNode *node) {
     
     // 检查是否在循环或switch中
     if (loopContextStack.empty()) {
-        std::cerr << "Error: 'break' statement not in loop or switch" << std::endl;
+        reportError("'break' statement not in loop or switch", node->lineNumber);
         return;
     }
     
@@ -4376,7 +4535,7 @@ void CodeGenerator::codegenContinueStmt(ContinueStmtNode *node) {
     
     // 检查是否在循环中
     if (loopContextStack.empty()) {
-        std::cerr << "Error: 'continue' statement not in loop" << std::endl;
+        reportError("'continue' statement not in loop", node->lineNumber);
         return;
     }
     
@@ -4403,7 +4562,7 @@ void CodeGenerator::codegenSwitchStmt(SwitchStmtNode *node) {
     // 计算switch条件表达式
     llvm::Value *condValue = codegenExpr(node->condition.get());
     if (!condValue) {
-        std::cerr << "Error: Invalid switch condition" << std::endl;
+        reportError("Invalid switch condition", node->lineNumber);
         return;
     }
     
@@ -4705,7 +4864,7 @@ void CodeGenerator::printSymbolTable() {
 bool CodeGenerator::writeSymbolTableToFile(const std::string& filename) {
     std::ofstream outFile(filename);
     if (!outFile.is_open()) {
-        std::cerr << "Error: Cannot create symbol table file '" << filename << "'" << std::endl;
+        reportError("Cannot create symbol table file '" + filename + "'", 0);
         return false;
     }
     
@@ -5167,7 +5326,7 @@ void CodeGenerator::printThreeAddressCode() {
 bool CodeGenerator::writeThreeAddressCodeToFile(const std::string& filename) {
     std::ofstream outFile(filename);
     if (!outFile.is_open()) {
-        std::cerr << "Error: Cannot create three address code file '" << filename << "'" << std::endl;
+        reportError("Cannot create three address code file '" + filename + "'", 0);
         return false;
     }
     

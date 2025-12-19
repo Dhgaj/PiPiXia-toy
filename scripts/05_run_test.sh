@@ -80,16 +80,23 @@ for ppx_file in "${TEST_FILES[@]}"; do
     exec_file="${OUTPUT_EXEC_DIR}/test_${basename}"
     report_file="${REPORT_DIR}/${basename}.md"
     
-    echo -e "${CYAN}[${TOTAL}] 处理: ${basename}.ppx${NC}"
+    echo -e "${CYAN}[${TOTAL}] 测试文件: ${basename}.ppx${NC}"
     
     # 读取源代码
     source_code=$(cat "${ppx_file}")
     
     # 编译
+    echo -e "  ${BLUE}→ 编译中...${NC}"
     raw_output=$("${COMPILER}" "${ppx_file}" -o "${exec_file}" 2>&1)
     compile_status=$?
     # 过滤ANSI颜色代码
     compile_output=$(echo "$raw_output" | sed 's/\x1b\[[0-9;]*m//g')
+    
+    if [ ${compile_status} -eq 0 ]; then
+        echo -e "  ${GREEN}✓ 编译成功${NC}"
+    else
+        echo -e "  ${RED}✗ 编译失败${NC}"
+    fi
     
     # 开始生成报告
     {
@@ -118,15 +125,31 @@ for ppx_file in "${TEST_FILES[@]}"; do
             echo ""
             
             # 运行测试
+            echo -e "  ${BLUE}→ 运行中...${NC}" >&2
             filename="$(basename "${ppx_file}")"
             test_input=$(get_test_input "$filename")
             
             if [[ -n "$test_input" ]]; then
+                echo -e "  ${YELLOW}→ 使用预定义输入数据${NC}" >&2
                 run_output=$(echo -e "$test_input" | "${exec_file}" 2>&1)
                 run_status=$?
             else
                 run_output=$("${exec_file}" 2>&1)
                 run_status=$?
+            fi
+            
+            if [ ${run_status} -eq 0 ]; then
+                echo -e "  ${GREEN}✓ 运行成功${NC}" >&2
+                # 显示输出预览
+                if [ -n "${run_output}" ]; then
+                    echo -e "  ${GREEN}输出预览:${NC}" >&2
+                    echo "${run_output}" | head -n 5 | sed 's/^/    /' >&2
+                    if [ $(echo "${run_output}" | wc -l) -gt 5 ]; then
+                        echo "    ..." >&2
+                    fi
+                fi
+            else
+                echo -e "  ${RED}✗ 运行失败 (退出码: ${run_status})${NC}" >&2
             fi
             
             echo "## 运行结果"
@@ -170,11 +193,11 @@ for ppx_file in "${TEST_FILES[@]}"; do
     
     if [ ${compile_status} -eq 0 ]; then
         SUCCESS=$((SUCCESS + 1))
-        echo -e "  ${GREEN}✓ 报告已生成${NC}"
     else
         FAILED=$((FAILED + 1))
-        echo -e "  ${YELLOW}⚠ 报告已生成（编译失败）${NC}"
     fi
+    echo -e "  ${BLUE}→ 报告已生成: ${basename}.md${NC}"
+    echo ""
 done
 
 # 生成汇总报告
@@ -212,6 +235,31 @@ summary_file="${REPORT_DIR}/00_summary.md"
     done
 } > "${summary_file}"
 
+# 生成合并报告（包含所有测试结果）
+merged_file="${REPORT_DIR}/all_tests_report.md"
+{
+    echo "# PiPiXia Test 完整测试报告"
+    echo ""
+    echo "**生成时间**: $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "**测试目录**: ${TEST_DIR}"
+    echo "**总计**: ${TOTAL} | **成功**: ${SUCCESS} | **失败**: ${FAILED}"
+    echo ""
+    echo "---"
+    echo ""
+    
+    # 合并所有单独的报告
+    for report in "${REPORT_DIR}"/*.md; do
+        report_name=$(basename "$report")
+        # 跳过汇总文件和合并文件本身
+        if [[ "$report_name" != "00_summary.md" ]] && [[ "$report_name" != "all_tests_report.md" ]]; then
+            cat "$report"
+            echo ""
+            echo "---"
+            echo ""
+        fi
+    done
+} > "${merged_file}"
+
 echo ""
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  测试完成${NC}"
@@ -219,3 +267,4 @@ echo -e "${BLUE}========================================${NC}"
 echo "总计: ${TOTAL} | 成功: ${SUCCESS} | 失败: ${FAILED}"
 echo "报告目录: ${REPORT_DIR}"
 echo "汇总报告: 00_summary.md"
+echo -e "合并报告: ${GREEN}all_tests_report.md${NC}"

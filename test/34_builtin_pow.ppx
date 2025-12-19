@@ -1,0 +1,53 @@
+# 内置函数 pow() 幂运算测试
+# 测试 pow(base, exponent) 函数
+
+func main(): int {
+    print("pow() 幂运算测试")
+    print("")
+    
+    # 基本整数幂运算
+    print("1. 基本幂运算:")
+    let a: double = pow(2, 3)
+    print("  pow(2, 3) = ${a} (应输出: 8)")
+    
+    let b: double = pow(5, 2)
+    print("  pow(5, 2) = ${b} (应输出: 25)")
+    
+    let c: double = pow(10, 0)
+    print("  pow(10, 0) = ${c} (应输出: 1)")
+    
+    print("")
+    
+    # 浮点数幂运算
+    print("2. 浮点数幂运算:")
+    let d: double = pow(2.5, 2)
+    print("  pow(2.5, 2) = ${d} (应输出: 6.25)")
+    
+    let e: double = pow(3.14159, 2)
+    print("  pow(3.14159, 2) = ${e} (应输出: ~9.87)")
+    
+    print("")
+    
+    # 负指数
+    print("3. 负指数:")
+    let f: double = pow(2, -1)
+    print("  pow(2, -1) = ${f} (应输出: 0.5)")
+    
+    let g: double = pow(2, -2)
+    print("  pow(2, -2) = ${g} (应输出: 0.25)")
+    
+    print("")
+    
+    # 开方运算
+    print("4. 开方运算:")
+    let h: double = pow(4, 0.5)
+    print("  pow(4, 0.5) = ${h} (应输出: 2, 即√4)")
+    
+    let i: double = pow(27, 0.333333)
+    print("  pow(27, 0.333) = ${i} (应输出: ~3, 即³√27)")
+    
+    print("")
+    print("===== 测试完成 =====")
+    
+    return 0
+}

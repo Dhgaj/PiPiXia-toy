@@ -333,6 +333,51 @@ cat code/54_try_catch.ppx
 
 ---
 
+### Q: PPX 有哪些内置函数？
+
+**A**: PPX 提供以下内置函数：
+
+| 函数 | 参数 | 返回值 | 说明 |
+|------|------|--------|------|
+| `print(value)` | 任意类型 | int | 打印值并换行 |
+| `print(value, nowrap)` | 任意类型 | int | 打印值不换行 |
+| `input()` | 无 | string | 读取一行输入 |
+| `input(prompt)` | string | string | 显示提示后读取输入 |
+| `len(str)` | string | int | 获取字符串长度 |
+| `to_int(value)` | string/double | int | 转换为整数 |
+| `to_double(value)` | string/int | double | 转换为浮点数 |
+| `to_string(value)` | 任意类型 | string | 转换为字符串 |
+| `pow(base, exp)` | number, number | double | 幂运算 |
+| `free(ptr)` | string | int | 释放动态内存 |
+
+**示例**：
+```ppx
+let name: string = input("请输入姓名: ")
+let age: int = to_int(input("请输入年龄: "))
+let result: double = pow(2, 10)  # 1024
+print("姓名长度: ${len(name)}")
+```
+
+---
+
+### Q: 如何计算幂运算？
+
+**A**: 使用 `pow()` 内置函数。
+
+```ppx
+# 基本用法
+let result: double = pow(2, 3)    # 2³ = 8.0
+let square: double = pow(5, 2)    # 5² = 25.0
+
+# 开方运算
+let sqrt2: double = pow(4, 0.5)   # √4 = 2.0
+
+# 负指数
+let half: double = pow(2, -1)     # 2⁻¹ = 0.5
+```
+
+---
+
 ### Q: 输入函数 input() 如何使用？
 
 **A**: 使用 `input()` 函数读取用户输入。
@@ -345,15 +390,13 @@ print("Hello, ${name}!")
 
 **带提示的输入**：
 ```ppx
-print("请输入你的名字: ", nowrap)
-let name: string = input()
+let name: string = input("请输入你的名字: ")
 ```
 
-**数字输入**（需要手动转换）：
+**数字输入**：
 ```ppx
-print("请输入一个数字: ", nowrap)
-let str: string = input()
-# 注意：当前版本需要在代码中处理字符串到数字的转换
+let num: int = to_int(input("请输入一个数字: "))
+let pi: double = to_double(input("请输入一个小数: "))
 ```
 
 ---
@@ -588,4 +631,4 @@ make info
 
 ---
 
-**最后更新**: 2025-11-27
+**最后更新**: 2025-12-19

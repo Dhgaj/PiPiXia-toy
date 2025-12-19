@@ -177,74 +177,80 @@ for ppx_file in "${PPX_FILES[@]}"; do
     
     # 生成Token文件
     if $GENERATE_TOKEN; then
+        echo -e "  ${BLUE}→ 生成Token...${NC}"
         token_file="${OUTPUT_TOKEN}/${basename}.tokens"
         if "${COMPILER}" "${ppx_file}" -tokens -o "${token_file}" 2>/dev/null; then
-            echo -e "  ${GREEN}✓${NC} Token: ${basename}.tokens"
+            echo -e "  ${GREEN}✓ Token: ${basename}.tokens${NC}"
         else
-            echo -e "  ${YELLOW}⚠${NC} Token生成失败"
+            echo -e "  ${RED}✗ Token生成失败${NC}"
             has_error=true
         fi
     fi
     
     # 生成AST文件
     if $GENERATE_AST; then
+        echo -e "  ${BLUE}→ 生成AST...${NC}"
         ast_file="${OUTPUT_AST}/${basename}.ast"
         if "${COMPILER}" "${ppx_file}" -ast -o "${ast_file}" 2>/dev/null; then
-            echo -e "  ${GREEN}✓${NC} AST: ${basename}.ast"
+            echo -e "  ${GREEN}✓ AST: ${basename}.ast${NC}"
             
             # 生成AST可视化
             if [ -f "${SCRIPT_DIR}/ast_visualizer.py" ] && command -v python3 &>/dev/null; then
                 png_file="${OUTPUT_AST_VIS}/${basename}.png"
                 if python3 "${SCRIPT_DIR}/ast_visualizer.py" "${ast_file}" "${png_file}" 2>/dev/null; then
-                    echo -e "  ${GREEN}✓${NC} AST可视化: ${basename}.png"
+                    echo -e "  ${GREEN}✓ AST可视化: ${basename}.png${NC}"
                 fi
             fi
         else
-            echo -e "  ${YELLOW}⚠${NC} AST生成失败"
+            echo -e "  ${RED}✗ AST生成失败${NC}"
             has_error=true
         fi
     fi
     
     # 生成LLVM IR文件
     if $GENERATE_LLVM; then
+        echo -e "  ${BLUE}→ 生成LLVM IR...${NC}"
         llvm_file="${OUTPUT_LLVM}/${basename}.ll"
         if "${COMPILER}" "${ppx_file}" -llvm -o "${llvm_file}" 2>/dev/null; then
-            echo -e "  ${GREEN}✓${NC} LLVM: ${basename}.ll"
+            echo -e "  ${GREEN}✓ LLVM: ${basename}.ll${NC}"
         else
-            echo -e "  ${YELLOW}⚠${NC} LLVM IR生成失败"
+            echo -e "  ${RED}✗ LLVM IR生成失败${NC}"
             has_error=true
         fi
     fi
     
     # 生成可执行文件
     if $GENERATE_EXEC; then
+        echo -e "  ${BLUE}→ 生成可执行文件...${NC}"
         exec_file="${OUTPUT_EXEC}/${basename}"
         if "${COMPILER}" "${ppx_file}" -o "${exec_file}" 2>/dev/null; then
-            echo -e "  ${GREEN}✓${NC} Exec: ${basename}"
+            echo -e "  ${GREEN}✓ Exec: ${basename}${NC}"
         else
-            echo -e "  ${YELLOW}⚠${NC} 可执行文件生成失败"
+            echo -e "  ${RED}✗ 可执行文件生成失败${NC}"
             has_error=true
         fi
     fi
     
     # 生成符号表文件
     if $GENERATE_SYMBOLS; then
+        echo -e "  ${BLUE}→ 生成符号表...${NC}"
         symbols_file="${OUTPUT_SYMBOLS}/${basename}.symbols"
         if "${COMPILER}" "${ppx_file}" -symbols -o "${symbols_file}" 2>/dev/null; then
-            echo -e "  ${GREEN}✓${NC} Symbols: ${basename}.symbols"
+            echo -e "  ${GREEN}✓ Symbols: ${basename}.symbols${NC}"
         else
-            echo -e "  ${YELLOW}⚠${NC} 符号表生成失败"
+            echo -e "  ${RED}✗ 符号表生成失败${NC}"
             has_error=true
         fi
     fi
     
     # 生成三地址码文件
     if $GENERATE_TAC; then
+        echo -e "  ${BLUE}→ 生成三地址码...${NC}"
         tac_file="${OUTPUT_TAC}/${basename}.tac"
         if "${COMPILER}" "${ppx_file}" -tac -o "${tac_file}" 2>/dev/null; then
-            echo -e "  ${GREEN}✓${NC} TAC: ${basename}.tac"
+            echo -e "  ${GREEN}✓ TAC: ${basename}.tac${NC}"
         else
-            echo -e "  ${YELLOW}⚠${NC} 三地址码生成失败"
+            echo -e "  ${RED}✗ 三地址码生成失败${NC}"
             has_error=true
         fi
     fi
@@ -254,6 +260,7 @@ for ppx_file in "${PPX_FILES[@]}"; do
     else
         SUCCESS=$((SUCCESS + 1))
     fi
+    echo ""
 done
 
 echo ""
@@ -270,3 +277,58 @@ echo "  Exec:    ${OUTPUT_EXEC}"
 echo "  Symbols: ${OUTPUT_SYMBOLS}"
 echo "  TAC:     ${OUTPUT_TAC}"
 echo "  可视化:  ${OUTPUT_AST_VIS}"
+
+# 生成构建报告
+REPORT_DIR="${PROJECT_ROOT}/report"
+mkdir -p "${REPORT_DIR}"
+build_report="${REPORT_DIR}/build_report_$(date +%Y%m%d_%H%M%S).md"
+{
+    echo "# PiPiXia 批量构建报告"
+    echo ""
+    echo "**生成时间**: $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "**代码目录**: ${CODE_DIR}"
+    echo "**总计**: ${TOTAL} | **成功**: ${SUCCESS} | **失败**: ${FAILED}"
+    echo ""
+    echo "## 生成类型"
+    echo ""
+    $GENERATE_TOKEN && echo "- ✅ Token文件"
+    $GENERATE_AST && echo "- ✅ AST文件"
+    $GENERATE_LLVM && echo "- ✅ LLVM IR文件"
+    $GENERATE_EXEC && echo "- ✅ 可执行文件"
+    $GENERATE_SYMBOLS && echo "- ✅ 符号表文件"
+    $GENERATE_TAC && echo "- ✅ 三地址码文件"
+    echo ""
+    echo "## 构建结果"
+    echo ""
+    echo "| 序号 | 文件名 | 状态 |"
+    echo "|------|--------|------|"
+    
+    index=1
+    for ppx_file in "${PPX_FILES[@]}"; do
+        if [ -f "${ppx_file}" ]; then
+            basename=$(basename "${ppx_file}" .ppx)
+            if "${COMPILER}" "${ppx_file}" -o /dev/null 2>/dev/null; then
+                status="✅ 成功"
+            else
+                status="❌ 失败"
+            fi
+            echo "| ${index} | \`${basename}.ppx\` | ${status} |"
+            ((index++))
+        fi
+    done
+    echo ""
+    echo "## 输出目录"
+    echo ""
+    echo "| 类型 | 路径 |"
+    echo "|------|------|"
+    echo "| Token | \`${OUTPUT_TOKEN}\` |"
+    echo "| AST | \`${OUTPUT_AST}\` |"
+    echo "| LLVM | \`${OUTPUT_LLVM}\` |"
+    echo "| Exec | \`${OUTPUT_EXEC}\` |"
+    echo "| Symbols | \`${OUTPUT_SYMBOLS}\` |"
+    echo "| TAC | \`${OUTPUT_TAC}\` |"
+    echo "| 可视化 | \`${OUTPUT_AST_VIS}\` |"
+} > "${build_report}"
+
+echo ""
+echo -e "构建报告: ${GREEN}${build_report}${NC}"

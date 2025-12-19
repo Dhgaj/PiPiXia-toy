@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "node.h"
+#include "error.h"
 
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
@@ -28,6 +29,9 @@
 // 外部变量声明
 extern bool g_verbose;  // 全局日志控制变量
 
+// 设置源文件路径（用于错误报告显示源代码上下文）
+void setSourceFilePath(const std::string& path);
+
 // 常量定义
 namespace CodeGenConstants {
     // 缓冲区大小配置
@@ -45,16 +49,19 @@ private:
     std::unique_ptr<llvm::Module> module;                           // LLVM 模块，包含所有函数和全局变量
     std::unique_ptr<llvm::IRBuilder<>> builder;                     // IR 构建器，用于生成 LLVM 指令
     
-    // 编译状态
-    int errorCount;                                                 // 累计错误数量
-    int warningCount;                                               // 累计警告数量
+    // 编译状态（错误计数使用error.h中的全局变量）
     llvm::Function* currentFunction;                                // 当前正在编译的函数
+    int currentFunctionLineNumber;                                  // 当前函数声明的行号
     
     // 符号表
     std::map<std::string, llvm::AllocaInst*> namedValues;          // 局部变量符号表
     std::map<std::string, llvm::GlobalVariable*> globalValues;      // 全局变量符号表
     std::map<std::string, llvm::Function*> functions;               // 函数符号表
     std::map<std::string, std::string> variableTypes;               // 变量类型映射表
+    std::set<std::string> localConstVariables;                      // 局部常量变量集合
+    std::set<std::string> failedDeclarations;                       // 声明失败的变量（用于抑制级联错误）
+    std::set<std::string> usedVariables;                            // 已使用的变量（用于未使用变量警告）
+    std::map<std::string, int> declaredVariables;                   // 已声明的变量及其行号
     
     // 全局变量动态初始化
     struct GlobalInitializer {
@@ -174,12 +181,10 @@ public:
     // 配置
     void setSourceDirectory(const std::string& dir) { sourceDirectory = dir; }  // 设置源文件目录（用于模块查找）
     
-    // 错误管理
-    void reportError(const std::string& message, int line = 0);     // 报告编译错误
-    void reportWarning(const std::string& message, int line = 0);   // 报告编译警告
-    bool hasErrors() const { return errorCount > 0; }               // 检查是否有错误
-    int getErrorCount() const { return errorCount; }                // 获取错误数量
-    int getWarningCount() const { return warningCount; }            // 获取警告数量
+    // 错误管理（使用error.h中的全局函数和变量）
+    bool hasErrors() const { return g_errorCount > 0; }             // 检查是否有错误
+    int getErrorCount() const { return g_errorCount; }              // 获取错误数量
+    int getWarningCount() const { return g_warningCount; }          // 获取警告数量
     
     // 代码生成
     bool generate(ProgramNode* root);                               // 主入口：从 AST 生成 LLVM IR

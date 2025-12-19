@@ -2,6 +2,13 @@
 
 # 批量运行error目录下的错误代码并生成报告
 # 每个ppx文件生成一个对应的Markdown报告
+# 颜色定义
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m'
 
 # 获取脚本所在目录的上级目录（项目根目录）
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -30,9 +37,9 @@ total=0
 success=0
 failed=0
 
-echo "========================================"
-echo "PPX 错误代码测试报告生成器"
-echo "========================================"
+echo -e "${BLUE}========================================${NC}"
+echo -e "${BLUE}  PPX 错误代码测试报告生成器${NC}"
+echo -e "${BLUE}========================================${NC}"
 echo ""
 echo "错误代码目录: $ERROR_DIR"
 echo "报告输出目录: $REPORT_DIR"
@@ -42,9 +49,11 @@ echo ""
 for ppx_file in "$ERROR_DIR"/*.ppx; do
     # 检查文件是否存在
     if [ ! -f "$ppx_file" ]; then
-        echo "警告：没有找到ppx文件"
+        echo -e "${YELLOW}警告：没有找到ppx文件${NC}"
         continue
     fi
+    
+    ((total++))
     
     # 获取文件名（不含路径和扩展名）
     filename=$(basename "$ppx_file" .ppx)
@@ -52,7 +61,7 @@ for ppx_file in "$ERROR_DIR"/*.ppx; do
     # 报告文件路径
     report_file="$REPORT_DIR/${filename}.md"
     
-    echo "处理: $filename.ppx"
+    echo -e "${CYAN}[${total}] 处理: ${filename}.ppx${NC}"
     
     # 读取ppx文件的第一行作为错误类型
     error_type=$(head -n 1 "$ppx_file" | sed 's/^# *//')
@@ -64,10 +73,24 @@ for ppx_file in "$ERROR_DIR"/*.ppx; do
     source_code=$(cat "$ppx_file")
     
     # 运行编译器并捕获输出
+    echo -e "  ${BLUE}→ 编译中...${NC}"
     raw_output=$("$COMPILER" "$ppx_file" 2>&1)
     exit_code=$?
     # 过滤ANSI颜色代码
     compiler_output=$(echo "$raw_output" | sed 's/\x1b\[[0-9;]*m//g')
+    
+    # 显示编译结果
+    if [ $exit_code -ne 0 ]; then
+        echo -e "  ${GREEN}✓ 错误检测成功 (退出码: ${exit_code})${NC}"
+        # 显示错误预览
+        error_preview=$(echo "$compiler_output" | grep -E "error:|错误" | head -n 2)
+        if [ -n "$error_preview" ]; then
+            echo -e "  ${YELLOW}错误信息:${NC}"
+            echo "$error_preview" | sed 's/^/    /'
+        fi
+    else
+        echo -e "  ${RED}✗ 未检测到错误${NC}"
+    fi
     
     # 生成Markdown报告
     {
@@ -113,18 +136,16 @@ for ppx_file in "$ERROR_DIR"/*.ppx; do
         fi
     } > "$report_file"
     
-    ((total++))
-    
-    echo "  -> 报告已生成: ${filename}.md"
+    echo -e "  ${BLUE}→ 报告已生成: ${filename}.md${NC}"
+    echo ""
 done
 
-echo ""
-echo "========================================"
-echo "测试完成"
-echo "========================================"
+echo -e "${BLUE}========================================${NC}"
+echo -e "${BLUE}  测试完成${NC}"
+echo -e "${BLUE}========================================${NC}"
 echo "总计测试: $total 个文件"
-echo "检测到错误: $success 个"
-echo "未检测到错误: $failed 个"
+echo -e "检测到错误: ${GREEN}$success${NC} 个"
+echo -e "未检测到错误: ${RED}$failed${NC} 个"
 echo "报告目录: $REPORT_DIR"
 echo ""
 
@@ -180,4 +201,30 @@ summary_file="$REPORT_DIR/00_summary.md"
     echo "- 缺少return语句"
 } > "$summary_file"
 
+# 生成合并报告（包含所有错误测试结果）
+merged_file="$REPORT_DIR/all_errors_report.md"
+{
+    echo "# PiPiXia 错误测试完整报告"
+    echo ""
+    echo "**生成时间**: $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "**错误代码目录**: $ERROR_DIR"
+    echo "**总计**: $total | **检测成功**: $success | **未检测**: $failed"
+    echo ""
+    echo "---"
+    echo ""
+    
+    # 合并所有单独的报告
+    for report in "$REPORT_DIR"/*.md; do
+        report_name=$(basename "$report")
+        # 跳过汇总文件和合并文件本身
+        if [[ "$report_name" != "00_summary.md" ]] && [[ "$report_name" != "all_errors_report.md" ]]; then
+            cat "$report"
+            echo ""
+            echo "---"
+            echo ""
+        fi
+    done
+} > "$merged_file"
+
 echo "汇总报告已生成: 00_summary.md"
+echo -e "合并报告已生成: ${GREEN}all_errors_report.md${NC}"

@@ -43,7 +43,8 @@
 | **核心源代码** | ~7000 行 | 包含词法、语法、AST、代码生成、主程序 |
 | **核心源文件** | 6 个 | lexical.l, syntax.y, node.h, codegen.cc/h, main.cc |
 | **示例代码** | 69 个 | code/ 目录下的完整示例 |
-| **测试用例** | 41 个 | test/ 目录下的功能测试 |
+| **测试用例** | 38 个 | test/ 目录下的功能测试 |
+| **错误测试** | 40 个 | error/ 目录下的错误检测测试 |
 | **自动化脚本** | 8 个 | 构建、测试、可视化等脚本 |
 | **文档** | 6 个 | 语法教程、词法分析、语法分析、FAQ、故障排除、脚本指南 |
 
@@ -127,7 +128,9 @@
     ```bash
     .
     ├── codegen.cc                # LLVM IR 代码生成器实现
-    ├── codegen.h                 # 代码生成器头文件，定义 CodeGenContext 类
+    ├── codegen.h                 # 代码生成器头文件，定义 CodeGenerator 类
+    ├── error.cc                  # 错误处理模块实现
+    ├── error.h                   # 错误处理头文件，定义错误报告函数
     ├── lexical.l                 # Flex 词法分析器定义文件
     ├── main.cc                   # 编译器主程序入口
     ├── node.h                    # AST 语法树节点定义（表达式、语句、函数等）
@@ -143,6 +146,7 @@
     ├── syntax.cc                 # Bison 生成的语法分析器 C++ 代码
     ├── syntax.hh                 # Bison 生成的语法分析器头文件
     ├── codegen.o                 # 代码生成器目标文件
+    ├── error.o                   # 错误处理模块目标文件
     ├── lexical.o                 # 词法分析器目标文件
     ├── main.o                    # 主程序目标文件
     └── syntax.o                  # 语法分析器目标文件
@@ -164,7 +168,9 @@
     │   ├── 词法分析.md              # 词法分析器设计文档
     │   └── 语法分析.md              # 语法分析器设计文档
     │
-    ├── test/                       # 测试文件目录
+    ├── test/                       # 功能测试文件目录
+    │
+    ├── error/                      # 错误检测测试文件目录
     │
     ├── scripts/                    # 自动化脚本目录
     │   ├── 01_detect_platform.sh   # 平台检测脚本
@@ -240,7 +246,12 @@
       -c             输出目标文件（.o），不生成可执行文件
                      可使用 -c -o <目录/文件.o> 指定输出路径
       -v, --verbose  启用详细日志 (AST 解析和 IR 生成)
-      -h, --help     显示此帮助信息
+      -Wall          启用所有警告
+      -Werror        将警告视为错误
+      -w             禁用所有警告
+      -Wno-unused    禁用未使用变量警告
+      -Wshadow       启用变量遮蔽警告
+      -h, --help     显示帮助信息
     ```
 
 - **词法分析**
@@ -365,7 +376,7 @@
 
     代码生成步骤:
     - 初始化LLVM环境
-    - 声明内置函数（printf, scanf, strlen等）
+    - 声明内置函数（print, input, len, pow, to_int, to_double, to_string, free）
     - 遍历AST节点，生成对应的LLVM IR指令
     - 类型转换和类型检查
     - 内存管理（临时字符串的malloc/free）
@@ -732,3 +743,5 @@ All rights reserved.
 **PiPiXia, Launch!** 🚀
 
 *本项目由 [Dhgaj](https://github.com/Dhgaj) 开发和维护*
+
+*最后更新: 2025-12-19*

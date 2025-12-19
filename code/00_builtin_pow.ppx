@@ -1,0 +1,20 @@
+# 内置函数 pow() 幂运算测试
+# 测试 pow(base, exponent) 函数
+
+func main(): int {
+    print("幂运算")
+    print("")
+    
+    # 基本整数幂运算
+    print("1. 基本幂运算:")
+    let a: double = pow(2, 3)
+    print("  pow(2, 3) = ${a} (应输出: 8)")
+    
+    let b: double = pow(5, 2)
+    print("  pow(5, 2) = ${b} (应输出: 25)")
+    
+    let c: double = pow(10, 0)
+    print("  pow(10, 0) = ${c} (应输出: 1)")
+    
+    return 0
+}

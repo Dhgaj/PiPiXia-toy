@@ -1512,6 +1512,248 @@ try {
 
 ---
 
+## 第十三章：内置函数
+
+PPX 提供了一系列内置函数，无需导入即可直接使用。
+
+### 13.1 输入输出函数
+
+#### 13.1.1 print() 函数
+
+`print()` 用于输出内容到终端，默认自动换行。
+
+```ppx
+# 基本输出
+print("Hello, World!")
+
+# 输出变量
+let x: int = 42
+print(x)
+
+# 输出不同类型
+let pi: double = 3.14159
+let flag: bool = true
+print(pi)    # 输出: 3.141590
+print(flag)  # 输出: true
+
+# 空行输出
+print()  # 输出一个换行
+```
+
+#### 13.1.2 print(value, nowrap) 连续输出
+
+使用 `nowrap` 参数可以禁止自动换行，适合连续输出。
+
+```ppx
+print("Name: ", nowrap)
+print("Alice")
+# 输出: Name: Alice
+
+# 构建一行输出
+for i in 0..5 {
+    print(i, nowrap)
+    print(" ", nowrap)
+}
+print()  # 最后换行
+# 输出: 0 1 2 3 4
+```
+
+#### 13.1.3 input() 函数
+
+`input()` 用于读取用户输入，返回字符串类型。
+
+```ppx
+# 基本输入
+let name: string = input()
+
+# 带提示的输入
+let age: string = input("请输入年龄: ")
+
+# 配合类型转换使用
+let num: int = to_int(input("请输入数字: "))
+```
+
+### 13.2 类型转换函数
+
+#### 13.2.1 to_int() 函数
+
+将其他类型转换为整数。
+
+```ppx
+# 字符串转整数
+let s: string = "123"
+let n: int = to_int(s)  # n = 123
+
+# 浮点数转整数（截断小数部分）
+let pi: double = 3.14
+let i: int = to_int(pi)  # i = 3
+
+# 整数直接返回
+let x: int = 42
+let y: int = to_int(x)  # y = 42
+```
+
+#### 13.2.2 to_double() 函数
+
+将其他类型转换为浮点数。
+
+```ppx
+# 字符串转浮点数
+let s: string = "3.14"
+let pi: double = to_double(s)  # pi = 3.14
+
+# 整数转浮点数
+let n: int = 42
+let d: double = to_double(n)  # d = 42.0
+
+# 浮点数直接返回
+let x: double = 2.718
+let y: double = to_double(x)  # y = 2.718
+```
+
+#### 13.2.3 to_string() 函数
+
+将其他类型转换为字符串。
+
+```ppx
+# 整数转字符串
+let n: int = 42
+let s1: string = to_string(n)  # s1 = "42"
+
+# 浮点数转字符串
+let pi: double = 3.14
+let s2: string = to_string(pi)  # s2 = "3.14"
+
+# 布尔值转字符串
+let flag: bool = true
+let s3: string = to_string(flag)  # s3 = "true"
+
+# 字符转字符串
+let c: char = 'A'
+let s4: string = to_string(c)  # s4 = "A"
+```
+
+### 13.3 数学函数
+
+#### 13.3.1 pow() 函数
+
+计算幂运算（base 的 exponent 次方）。
+
+```ppx
+# 基本用法
+let result: double = pow(2, 3)    # 2³ = 8.0
+let square: double = pow(5, 2)    # 5² = 25.0
+let cube: double = pow(3, 3)      # 3³ = 27.0
+
+# 支持浮点数
+let pi_sq: double = pow(3.14159, 2)  # π² ≈ 9.8696
+
+# 支持负指数
+let half: double = pow(2, -1)     # 2⁻¹ = 0.5
+let quarter: double = pow(2, -2)  # 2⁻² = 0.25
+
+# 开方运算
+let sqrt2: double = pow(2, 0.5)   # √2 ≈ 1.414
+let cbrt8: double = pow(8, 0.333) # ³√8 ≈ 2.0
+```
+
+### 13.4 字符串函数
+
+#### 13.4.1 len() 函数
+
+获取字符串的长度。
+
+```ppx
+let s: string = "Hello"
+let length: int = len(s)  # length = 5
+
+let empty: string = ""
+let n: int = len(empty)  # n = 0
+
+# 中文字符串（UTF-8 字节数）
+let chinese: string = "你好"
+let bytes: int = len(chinese)  # bytes = 6 (每个中文字符3字节)
+```
+
+### 13.4 内存管理函数
+
+#### 13.4.1 free() 函数
+
+释放动态分配的内存。通常用于释放 `input()` 或 `to_string()` 返回的字符串。
+
+```ppx
+let s: string = input("输入: ")
+# 使用字符串...
+print(s)
+# 释放内存
+free(s)
+```
+
+> **注意**：在大多数情况下，程序结束时内存会自动释放。`free()` 主要用于长时间运行的程序或需要精确控制内存的场景。
+
+### 13.5 内置函数速查表
+
+| 函数 | 参数 | 返回值 | 说明 |
+|------|------|--------|------|
+| `print(value)` | 任意类型 | int | 打印值并换行 |
+| `print(value, nowrap)` | 任意类型, nowrap | int | 打印值不换行 |
+| `input()` | 无 | string | 读取一行输入 |
+| `input(prompt)` | string | string | 显示提示后读取输入 |
+| `len(str)` | string | int | 获取字符串长度 |
+| `to_int(value)` | string/double/int | int | 转换为整数 |
+| `to_double(value)` | string/int/double | double | 转换为浮点数 |
+| `to_string(value)` | 任意类型 | string | 转换为字符串 |
+| `pow(base, exp)` | number, number | double | 幂运算 (base^exp) |
+| `free(ptr)` | string | int | 释放动态内存 |
+
+### 13.6 使用示例
+
+#### 计算器示例
+
+```ppx
+func main(): int {
+    print("简易计算器")
+    print("请输入第一个数: ", nowrap)
+    let a: int = to_int(input())
+    
+    print("请输入第二个数: ", nowrap)
+    let b: int = to_int(input())
+    
+    print("结果:")
+    print("${a} + ${b} = ${a + b}")
+    print("${a} - ${b} = ${a - b}")
+    print("${a} * ${b} = ${a * b}")
+    
+    if (b != 0) {
+        print("${a} / ${b} = ${a / b}")
+    } else {
+        print("除数不能为零!")
+    }
+    
+    return 0
+}
+```
+
+#### 字符串处理示例
+
+```ppx
+func main(): int {
+    let name: string = input("请输入姓名: ")
+    let age: string = input("请输入年龄: ")
+    
+    let nameLen: int = len(name)
+    let ageNum: int = to_int(age)
+    
+    print("姓名: ${name} (${nameLen} 个字符)")
+    print("年龄: ${ageNum} 岁")
+    print("明年: ${ageNum + 1} 岁")
+    
+    return 0
+}
+```
+
+---
+
 ## 下一步学习
 
 1. **阅读示例代码**：查看 `code/` 目录中的示例
