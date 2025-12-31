@@ -33,9 +33,9 @@ case "${CLEAN_TYPE}" in
         echo ""
         
         # 清理目标文件
-        if [ -f "lexical.o" ] || [ -f "syntax.o" ] || [ -f "main.o" ] || [ -f "codegen.o" ]; then
+        if [ -f "lexical.o" ] || [ -f "syntax.o" ] || [ -f "main.o" ] || [ -f "codegen.o" ] || [ -f "error.o" ]; then
             echo -e "  ${YELLOW}→ 清理目标文件 (.o)${NC}"
-            rm -f lexical.o syntax.o main.o codegen.o
+            rm -f lexical.o syntax.o main.o codegen.o error.o
         fi
         
         # 清理生成的源文件
